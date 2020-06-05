@@ -1,0 +1,14 @@
+setup:
+    config:
+      ENVIRONMENT: development
+      DEV_DB_URL: mongodb+srv://comestibles:franceskorede@comestibles-one-xhy3v.mongodb.net/development?retryWrites=true&w=majority
+      DEV_PAYSTACK_KEY: sk_test_a2e17f86d0aeb1541e71ffdde6a7e91be611d23b
+      STAGING_DB_URL: mongodb+srv://comestibles:franceskorede@comestibles-one-xhy3v.mongodb.net/staging?retryWrites=true&w=majority
+      STAGING_PAYSTACK_KEY: sk_test_a2e17f86d0aeb1541e71ffdde6a7e91be611d23b
+      PRODUCTION_DB_URL: mongodb+srv://comestibles:franceskorede@comestibles-one-xhy3v.mongodb.net/production?retryWrites=true&w=majority
+      PRODUCTION_PAYSTACK_KEY: sk_live_d57222b6dde0bba91b825705ace8d1b94c393380
+      JWT_SECRET_KEY: eypZAZy0CY^g9%KreypZAZy0CY^g9%Kr
+      
+build:
+    docker:
+      web: Dockerfile
