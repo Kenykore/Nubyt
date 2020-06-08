@@ -33,11 +33,11 @@ exports.login = async function (req, res, next) {
     try {
         let email = req.body.email || req.body.mobile
         let password = req.body.password
-        const user = await User.findOne({ $or: [{ email: email }, { mobile: email }] }).lean()
+        const user = await User.findOne({ $or: [{ email: email }, { mobile: email },{username:email}] }).lean()
         if (!user) {
             return response.sendError({
                 res,
-                message: "Login failed. Invalid email address or mobile number",
+                message: "Login failed. Invalid email address or mobile number or username",
                 statusCode: status.NOT_FOUND
             });
         }
@@ -81,19 +81,33 @@ exports.register = async function (req, res, next) {
         var email = req.body.email;
         var mobile = req.body.mobile;
         let password= req.body.password
-        if (!email || !mobile) {
-            return response.sendError({ res, statusCode: status.UNAUTHORIZED, message: "You must enter an email address" })
+        if (!email || !mobile || !req.body.username) {
+            return response.sendError({ res, statusCode: status.UNAUTHORIZED, message: "You must enter an email address,mobile number or username" })
             // return res.status(422).send({error: 'You must enter an email address'});
         }
         if (!password) {
             return response.sendError({ res, statusCode: status.UNAUTHORIZED, message: "You must enter a password" });
         }
-        let userExist = await User.findOne({ $or: [{ email: req.body.email }, { mobile: req.body.email }] })
+        let userExist = await User.findOne({ $or: [{ email: req.body.email }, { mobile: req.body.email },{username:req.body.username}] })
         if (userExist) {
-            return response.sendError({
-                res,
-                message: "User account already exists"
-            });
+            if(userExist.email===req.body.email){
+                return response.sendError({
+                    res,
+                    message: "Email already exists"
+                }); 
+            }
+            else if(userExist.mobile===req.body.mobile){
+                return response.sendError({
+                    res,
+                    message: "Mobile number already exists"
+                }); 
+            }
+            else if(userExist.username===req.body.username){
+                return response.sendError({
+                    res,
+                    message: "Username already exists"
+                });  
+            }
         }
        delete req.body.password
         let user = await User.create({
@@ -246,14 +260,32 @@ exports.UpdateProfile = async function (req, res, next) {
         let userDetails=req.user_details
         //fix security loophole
         let update=req.body
-        if(update.hasOwnProperty("email") || update.hasOwnProperty("mobile")){
+        if(update.hasOwnProperty("email") || update.hasOwnProperty("mobile") || update.hasOwnProperty("username")){
             let user_found=await User.findById(userDetails._id).lean()
-            if(user_found.email !==req.body.email || user_found.mobile!==req.body.mobile){
-                let userExist = await User.findOne({ $or: [{ email: req.body.email || "" }, { mobile: req.body.mobile || "" }] })
+            if(user_found.email !==req.body.email){
+                let userExist = await User.findOne({ email: req.body.email})
                 if(userExist){
                     return response.sendError({
                         res,
-                        message: "Email or mobile number already exists"
+                        message: "Email already exists"
+                    }); 
+                }
+            }
+            if(user_found.mobile!==req.body.mobile){
+                let userExist = await User.findOne({ mobile: req.body.mobile})
+                if(userExist){
+                    return response.sendError({
+                        res,
+                        message: "Mobile number already exists"
+                    }); 
+                }
+            }
+            if(user_found.username!==req.body.username){
+                let userExist = await User.findOne({ username: req.body.username})
+                if(userExist){
+                    return response.sendError({
+                        res,
+                        message: "Username already exists"
                     }); 
                 }
             }

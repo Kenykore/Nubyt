@@ -47,7 +47,7 @@ const UtilityFunction = {
      */
     async getUserDetails(user_id, key = null) {
         try {
-            const user = await User.findById(user_id).select("-password -resetPasswordToken");
+            const user = await User.findById(user_id).select("-password -resetPasswordToken").lean();
             console.log(user,"user")
             if (user) {
                 if (key === null) return user

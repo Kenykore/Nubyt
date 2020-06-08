@@ -1,4 +1,5 @@
 var User = require('../../../models/users');
+var UserFollowers = require('../../../models/followers');
 var ObjectID = require('mongoose').Types.ObjectId;
 //var socket= require('../../../socket/usersocket')
 const { randomNumber, formatPhoneNumber, addLeadingZeros, getUserDetails, getTimeWindow, getNextScheduleDate, getNextSchedulePayment } = require("../../../utilities/utils");
@@ -24,6 +25,7 @@ var selfSignedConfig = {
 
 exports.updateUserDeviceToken = async function (req, res, next) {
     try {
+        let token=req.body.token
         let user_details = req.user_details
         let user_updated = await User.findByIdAndUpdate(user_details.user_id, {
             $push: {
@@ -170,7 +172,74 @@ exports.AddDiscountCodeUsage = async (req, res, next) => {
         return res.status(500).json({ err: err, success: false })
     }
 }
+exports.updateUserBlockList = async function (req, res, next) {
+    try {
+        let user_details = req.user_details
+        let blocked_user_id= req.body.blocked_user_id
+        let user_updated = await User.findByIdAndUpdate(user_details.user_id, {
+            $push: {
+                "blacklist":blocked_user_id
+            }
+        }, { new: true })
+        if (user_updated) {
+            delete user_updated.password;
+            delete user_updated.resetPasswordExpires
+            delete user_updated.resetPasswordToken
 
+            const accessToken = Tokenizer.signToken({
+                user_id: user_updated._id,
+                ...user_updated
+            });
+            return response.sendSuccess({
+                res,
+                message: "User blocked successfully",
+                body: { user: user_updated, _token: accessToken }
+            });
+        }
+        return response.sendError({
+            res,
+            message: "Unable to block user,try again"
+        });
+
+    } catch (error) {
+        console.log(error)
+        next(error)
+    }
+}
+exports.unBlockUser = async function (req, res, next) {
+    try {
+        let user_details = req.user_details
+        let blocked_user_id= req.body.blocked_user_id
+        let user_updated = await User.findByIdAndUpdate(user_details.user_id, {
+            $pull: {
+                "blacklist":{ $in: [blocked_user_id ] }
+            }
+        }, { new: true })
+        if (user_updated) {
+            delete user_updated.password;
+            delete user_updated.resetPasswordExpires
+            delete user_updated.resetPasswordToken
+
+            const accessToken = Tokenizer.signToken({
+                user_id: user_updated._id,
+                ...user_updated
+            });
+            return response.sendSuccess({
+                res,
+                message: "User blocked successfully",
+                body: { user: user_updated, _token: accessToken }
+            });
+        }
+        return response.sendError({
+            res,
+            message: "Unable to block user,try again"
+        });
+
+    } catch (error) {
+        console.log(error)
+        next(error)
+    }
+}
 exports.updateUserDiscountCode = function (req, res, next) {
     var id = ObjectID(req.body.id)
     var balance = req.body.balance
@@ -202,6 +271,41 @@ exports.updateUserDiscountCode = function (req, res, next) {
         })
 
     });
+}
+exports.followerUser= async(req,res,next)=>{
+    try {
+        //do check for blocked list
+        let user_id=req.body.user_id
+        let follower_details = req.user_details
+        let user_followed= await UserFollowers.create({
+            time: new Date(Date.now()),
+            user_id:user_id,
+            follower_id:follower_details.user_id
+        })
+        if(user_followed){
+            return response.sendSuccess({ res, message: "Users followed  Sucessfully", body:{...user_followed} });
+        }
+        return response.sendError({ res, message: "Couldnt follow user" });
+        
+    } catch (error) {
+        console.log(error);
+        next(error)
+    }
+}
+exports.UnfollowerUser= async(req,res,next)=>{
+    try {
+        let id=req.body.following_id
+        let follower_details = req.user_details
+        let user_unfollowed= await UserFollowers.findByIdAndDelete(id)
+        if(user_unfollowed){
+            return response.sendSuccess({ res, message: "Users Unfollowed  Sucessfully", body:{...user_followed} });
+        }
+        return response.sendError({ res, message: "Couldnt Unfollow user" });
+        
+    } catch (error) {
+        console.log(error);
+        next(error)
+    }
 }
 exports.createUserAdmin = async (req, res, next) => {
     try {
@@ -292,6 +396,47 @@ exports.createUserAdmin = async (req, res, next) => {
         next(error)
     }
 }
+exports.searchAllUser = async function (req, res, next) {
+    try {
+        const usersPerPage = parseInt(req.query.limit) || 10;
+        let currentPage = parseInt(req.query.page) || 0;
+        const skip = currentPage * usersPerPage;
+
+        const totalusers = await User.find({
+            $or: [
+                {  firstName: new RegExp(req.query.search, 'i') },
+                { lastName: new RegExp(req.query.search, 'i') },
+                { username: new RegExp(req.query.search, 'i') },
+            ]
+        }).countDocuments();
+        const users = await User.find({
+            $or: [
+                {  firstName: new RegExp(req.query.search, 'i') },
+                { lastName: new RegExp(req.query.search, 'i') },
+                { username: new RegExp(req.query.search, 'i') },
+            ]
+        }).sort({ _id: "desc" }).skip(skip).limit(usersPerPage);
+        const totalPages = Math.ceil(totalusers / usersPerPage);
+
+        if (users && users.length) {
+            const responseContent = {
+                "total_users": totalusers,
+                "pagination": {
+                    "current": currentPage,
+                    "number_of_pages": totalPages,
+                    "perPage": usersPerPage,
+                    "next": currentPage === totalPages ? currentPage : currentPage + 1
+                },
+                data: users
+            }
+            return response.sendSuccess({ res, message: "Users  found", body: responseContent });
+        }
+        return response.sendError({ res, message: "No User found", statusCode: status.NOT_FOUND });
+    } catch (error) {
+        console.log(error);
+        next(error)
+    }
+}
 exports.getAllUser = async function (req, res, next) {
     try {
         const usersPerPage = parseInt(req.query.limit) || 10;
@@ -316,6 +461,40 @@ exports.getAllUser = async function (req, res, next) {
             return response.sendSuccess({ res, message: "Users  found", body: responseContent });
         }
         return response.sendError({ res, message: "No User found", statusCode: status.NOT_FOUND });
+    } catch (error) {
+        console.log(error);
+        next(error)
+    }
+}
+exports.getAllUserFollowers = async function (req, res, next) {
+    try {
+        const usersPerPage = parseInt(req.query.limit) || 10;
+        let currentPage = parseInt(req.query.page) || 0;
+        const skip = currentPage * usersPerPage;
+        let user_details = req.user_details
+        const totalusers = await UserFollowers.find({user_id:user_details.user_id}).countDocuments();
+        const users = await UserFollowers.find({user_id:user_details.user_id}).sort({ _id: "desc" }).skip(skip).limit(usersPerPage);
+        const totalPages = Math.ceil(totalusers / usersPerPage);
+        let user_followers=[]
+        for(let u of users){
+            let user_found= await getUserDetails(u.follower_id)
+            user_followers.push({follower:user_found,...u})
+        }
+        if (user_followers && user_followers.length) {
+          
+            const responseContent = {
+                "total_users": totalusers,
+                "pagination": {
+                    "current": currentPage,
+                    "number_of_pages": totalPages,
+                    "perPage": usersPerPage,
+                    "next": currentPage === totalPages ? currentPage : currentPage + 1
+                },
+                data: user_followers
+            }
+            return response.sendSuccess({ res, message: "Users followers  found", body: responseContent });
+        }
+        return response.sendError({ res, message: "No User follower found", statusCode: status.NOT_FOUND });
     } catch (error) {
         console.log(error);
         next(error)
@@ -395,6 +574,38 @@ exports.searchUsers = async function (req, res, next) {
             return response.sendSuccess({ res, message: "Users  found", body: responseContent });
         }
         return response.sendError({ res, message: "No User found", statusCode: status.NOT_FOUND });
+    } catch (error) {
+        console.log(error)
+        next(error)
+    }
+}
+exports.getSingleUser = async function (req, res, next) {
+    try {
+        if (!req.params.user_id) {
+            return response.sendError({ res, message: "No user id found" });
+        }
+
+        const user = await User.findById(req.params.user_id).select("-password -resetPasswordToken").lean()
+        
+        if (user) {
+            let user_followers_count=await UserFollowers.countDocuments({user_id:user._id})
+            let user_following_count=await UserFollowers.countDocuments({follower_id:user._id})
+            let user_found={
+                ...user,
+                followers:user_followers_count,
+                following:user_following_count
+            }
+            return response.sendSuccess({
+                res,
+                message: "User record found",
+                body: { data: user_found }
+            });
+        }
+        return response.sendError({
+            res,
+            message: "User not found",
+            statusCode: status.NOT_FOUND
+        });
     } catch (error) {
         console.log(error)
         next(error)

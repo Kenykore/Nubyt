@@ -1,7 +1,8 @@
 const status = require("http-status");
 const Tokenizer = require("../utilities/tokeniztion");
 const crypto = require("crypto");
-
+const User= require("../models/users")
+const ObjectID= require("mongoose").Types.ObjectId
 // helper
 const response = require("../utilities/response");
 
@@ -24,6 +25,22 @@ const Secure = {
             next();
         } catch (error) {
             next(error);
+        }
+    },
+    async verifyNonBlockUser(req,res,next){
+        try {
+            let user_details= req.user_details
+            let user_blocked= await User.findOne({_id:ObjectID(req.body.user_id || req.params.user_id),blocked: { $in: [user_details.user_id]}}).lean()
+            if(user_blocked){
+                return response.sendError({ res, message: "Cannot perform this action, user blocked you", statusCode: status.FORBIDDEN });
+            }
+            else{
+                next()
+                return
+            }
+        } catch (error) {
+            console.log(error)
+            next(errror)
         }
     },
     // async verifyNonLoggedIn(req, res, next) {

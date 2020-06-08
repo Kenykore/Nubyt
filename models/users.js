@@ -2,6 +2,11 @@ var mongoose = require('mongoose');
 var bcrypt = require('bcrypt-nodejs')
 var moment = require('moment')
 var userModel= new mongoose.Schema({
+    username:{
+        type:String,
+        unique: true,
+        required: true
+    },
     email: {
         type: String,
         lowercase: true,
@@ -68,8 +73,8 @@ var userModel= new mongoose.Schema({
         type: Boolean,
         default: true
     },
-    followers:[String]
-    
+    blacklist:[String],
+    favourites:[String]
 }, {
     timestamps: true
 });

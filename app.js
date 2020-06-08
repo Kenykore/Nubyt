@@ -70,7 +70,7 @@ const adminUserRouter=require("./api/v1/routes/administrators/users")
 //user routers
 const userAuthRouter=require("./api/v1/routes/users/authentication")
 const userUsersRouter=require("./api/v1/routes/users/users")
-
+const userPostRouter=require("./api/v1/routes/users/post")
 //
 //authentication
 app.use("/auth/admin",adminAuthRouter);
@@ -78,7 +78,8 @@ app.use("/auth/user",userAuthRouter);
 //users
 app.use("/users",userUsersRouter)
 app.use("/users/admin",adminUserRouter)
-
+//posts
+app.use("/post/user",userPostRouter)
 //notifications api
 //end of notification api
 app.set('view engine', 'pug');
