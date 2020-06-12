@@ -23,6 +23,10 @@ var postModel= new mongoose.Schema({
         type:Number,
         default:0 
     },
+    views:{
+        type:Number,
+        default:0
+    },
     tags:[String],
     comment_disabled:{
         type:Boolean,

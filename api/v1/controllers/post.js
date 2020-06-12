@@ -345,6 +345,32 @@ exports.GetSinglePost=async (req,res,next)=>{
         next(error)
     }
 }
+exports.LikePost=async(req,res,next)=>{
+    try {
+       let post_id= req.params.post_id
+       let user= req.user_details
+       let post_liked= await Post.findByIdAndUpdate(post_id,{
+           $push:{
+               user_likes:{
+                   user_id:user.user_id,
+                   username:user.username,
+                   time:new Date(Date.now())
+               }
+           },
+           $inc:{
+               likes:1
+           }
+       }) 
+       if(post_liked){
+        return response.sendSuccess({ res, message: "Posts liked", body: post_liked });
+       }
+       return response.sendError({ res, message: "Unabled to like Post" });
+
+    } catch (error) {
+        console.log(error)
+        next(error)
+    }
+}
 exports.UnLikePost=async(req,res,next)=>{
     try {
        let post_id= req.params.post_id

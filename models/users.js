@@ -13,13 +13,14 @@ var userModel= new mongoose.Schema({
         unique: true,
         required: true
     },
-    city: {
-        type: String,
-        required: true
+    bio:{
+        type:String
     },
-    country: {
-        type: String,
-        required: true
+    instagram_id:{
+        type:String
+    },
+    facebook_id:{
+        type:String
     },
     userType: {
         type: String,
@@ -47,19 +48,17 @@ var userModel= new mongoose.Schema({
         type:String,
         default:""
     },
-    firstName: {
+    name: {
         type: String, default: 'Nubyt'
 
-    },
-    lastName: {
-        type: String,
-        default: 'Nubyt'
     },
     address: {
         lat: Number,
         lng: Number,
         name: String,
     },
+    dob:Date,
+    gender:String,
     deviceToken: [""],
     resetPasswordToken: {
         type: String,

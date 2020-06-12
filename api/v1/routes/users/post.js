@@ -22,5 +22,5 @@ router.get("/:post_id",verifyUser,PostController.GetSinglePost);
 router.delete("/:post_id",verifyUser,PostController.deleteUserPost)
 router.delete("/:post_comment_id",verifyUser,PostController.deleteUserPostComment)
 
-
+module.exports = router;
 
