@@ -1,4 +1,5 @@
 var User = require('../../../models/users');
+var Post= require("../../../models/post")
 var UserFollowers = require('../../../models/followers');
 var ObjectID = require('mongoose').Types.ObjectId;
 //var socket= require('../../../socket/usersocket')
@@ -404,15 +405,15 @@ exports.searchAllUser = async function (req, res, next) {
 
         const totalusers = await User.find({
             $or: [
-                {  firstName: new RegExp(req.query.search, 'i') },
-                { lastName: new RegExp(req.query.search, 'i') },
+                {  name: new RegExp(req.query.search, 'i') },
+                {email: new RegExp(req.query.search, 'i') },
                 { username: new RegExp(req.query.search, 'i') },
             ]
         }).countDocuments();
         const users = await User.find({
             $or: [
-                {  firstName: new RegExp(req.query.search, 'i') },
-                { lastName: new RegExp(req.query.search, 'i') },
+                {  name: new RegExp(req.query.search, 'i') },
+                { email: new RegExp(req.query.search, 'i') },
                 { username: new RegExp(req.query.search, 'i') },
             ]
         }).sort({ _id: "desc" }).skip(skip).limit(usersPerPage);
@@ -590,10 +591,19 @@ exports.getSingleUser = async function (req, res, next) {
         if (user) {
             let user_followers_count=await UserFollowers.countDocuments({user_id:user._id})
             let user_following_count=await UserFollowers.countDocuments({follower_id:user._id})
+            let user_likes=0
+            let user_posts= await Post.find({user_id:user._id}).lean()
+            if(user_posts){
+                user_likes= user_posts.reduce((previous,next)=>{
+                    console.log(next,"next")
+                    return Number(previous+next.likes)
+                },0)
+            }
             let user_found={
                 ...user,
                 followers:user_followers_count,
-                following:user_following_count
+                following:user_following_count,
+                likes:user_likes
             }
             return response.sendSuccess({
                 res,

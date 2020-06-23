@@ -72,6 +72,17 @@ var userModel= new mongoose.Schema({
         type: Boolean,
         default: true
     },
+    device:{
+        os: {
+            "name": String,
+            "version": String,
+          },
+          user_device: {
+            "device_type": String,
+            "brand": String,
+            "model": String
+          },
+    },
     blacklist:[String],
     favourites:[String]
 }, {

@@ -3,6 +3,8 @@ const bcrypt = require("bcryptjs");
 const status = require("http-status");
 var User = require('../../../models/users');
 var crypto = require('crypto')
+var moment =require('moment')
+const deviceDetector = require("device-detector-js");
 var nodemailer = require('nodemailer')
 var cron = require('node-cron')
 const sendEmail= require("../../../services/Notification")
@@ -66,6 +68,35 @@ exports.login = async function (req, res, next) {
             ...user,
             user_id:user._id
         });
+        const deviceDetect = new deviceDetector();
+        const userAgent = req.header("User-Agent")
+        const device = deviceDetect.parse(userAgent);
+        console.log(device,"device")
+        if(user.device===undefined || device.device.brand!==user.device.user_device.brand || device.device.model !==user.device.user_device.model || device.device.type!==user.device.user_device.device_type || device.os.version!==user.device.os.version){
+            await User.findByIdAndUpdate(user._id,{device:{
+                os: {
+                    "name": device.os.name,
+                    "version": device.os.version,
+                  },
+                  user_device: {
+                    "device_type": device.device.type,
+                    "brand": device.device.brand,
+                    "model": device.device.model
+                  },
+            }})
+            let mailOptions = {
+                from: 'Nubyt', // sender address
+                to:  user.email, // list of receivers
+                subject: "New Device Login", // Subject line
+                template_name:"new-login",
+                data:{
+                    date: moment(Date.now()).format("DD/MM/YYYY HH:mm"),
+                    device:`${device.os.name} ${device.os.version} ,${device.device.type} ${device.device.brand} ${device.device.model}`
+                } 
+            };
+             await sendEmail(mailOptions)
+        }
+      
         return response.sendSuccess({
             res,
             message: "Login successful",
@@ -110,6 +141,7 @@ exports.register = async function (req, res, next) {
             }
         }
        delete req.body.password
+               const salt = await bcrypt.genSalt(10);
         let user = await User.create({
             password: await bcrypt.hash(password, salt),
             ...req.body
@@ -117,13 +149,15 @@ exports.register = async function (req, res, next) {
         console.log("created user", user)        
         let userRegDate = user.createdAt
         let mailOptions = {
-            from: '"Comestibles" <comestiblestech@gmail.com>', // sender address
-            to: "comestibles.com.ng@gmail.com", // list of receivers
-            subject: "New User", // Subject line
-            text: `A new user with, email ${user.email} and phone number ${user.mobile} just signed up at ${userRegDate} 
-                    `, // plain text body
+            from: 'Nubyt', // sender address
+            to: user.email, // list of receivers
+            subject: "Welcome to Nubyt", // Subject line
+            template_name:"welcome",
+            data:{
+                name:user.username
+            } 
         };
-      
+        await sendEmail(mailOptions)
        
         let responseData = user.toObject()
         delete responseData.password
@@ -140,11 +174,11 @@ exports.register = async function (req, res, next) {
 }
 exports.forgotPassword = async function (req, res, next) {
     try {
-        const checkEmail =await User.findOne({$or: [ { email: req.body.email }, { mobile: req.body.mobile } ] })
+        const checkEmail =await User.findOne({$or: [ { email: req.body.email }, { mobile: req.body.email },{username:req.body.email} ] })
         if (!checkEmail){
             return response.sendError({
                 res,
-                message: "Invalid email address or mobile number",
+                message: "Invalid email address,username or mobile number",
                 statusCode: status.NOT_FOUND
             });
         }
@@ -153,15 +187,21 @@ exports.forgotPassword = async function (req, res, next) {
             var expiry=moment(Date.now()).add(60,"minutes").toDate()
             console.log(expiry)
             await User.findByIdAndUpdate(checkEmail._id,{resetPasswordToken:code,resetPasswordExpires:expiry})
+            const deviceDetect = new deviceDetector();
+            const userAgent = req.header("User-Agent")
+            const device = deviceDetect.parse(userAgent);
+            console.log(device,"device")
               //send Email
               let mailOptions = {
-                  from: '"Comestibles" <comestiblestech@gmail.com>', // sender address
-                  to: checkEmail.email, // list of receivers
-                  subject: "Password Reset", // Subject line
-                  text: `Your token to reset password is ${code}
-              If you did not request this ,please ignore this and your password would remain unchanged
-              `, // plain text body
-              };
+                from: 'Nubyt', // sender address
+                to:  checkEmail.email, // list of receivers
+                subject: "Password Change Request", // Subject line
+                template_name:"forget-password",
+                data:{
+                    code:code,
+                    device:`${device.os.name} ${device.os.version} ,${device.device.type} ${device.device.brand} ${device.device.model}`
+                } 
+            };
              await sendEmail(mailOptions)
         return response.sendSuccess({
             res,
@@ -187,14 +227,21 @@ exports.resetPassword = async function (req, res, next) {
         const hashPassword = await bcrypt.hash(req.body.password, salt);
 
         await User.findByIdAndUpdate(user._id,{password:hashPassword})
-        var mailOptions = {
-            from: '"Comestibles" <comestiblestech@gmail.com>', // sender address
-            to: user.email, // list of receivers
+        const deviceDetect= new deviceDetector();
+const userAgent = req.header("User-Agent")
+const device = deviceDetect.parse(userAgent);
+console.log(device,"device")
+        let mailOptions = {
+            from: 'Nubyt', // sender address
+            to:  user.email, // list of receivers
             subject: "Password Changed", // Subject line
-            text: `Your Password has been changed. If you didnt change it yourself kindly contact support
-        `, // plain text body
+            template_name:"reset-password",
+            data:{
+                date:moment(Date.now()).format("DD/MM/YYYY HH:mm"),
+                device:`${device.os.name} ${device.os.version} ,${device.device.type} ${device.device.brand} ${device.device.model}`
+            } 
         };
-        await sendEmail(mailOptions)
+         await sendEmail(mailOptions)
         return response.sendSuccess({
             res,
             message: "Password reset successful"
@@ -236,13 +283,20 @@ exports.resetPasswordApp = async function (req, res, next) {
         const hashPassword = await bcrypt.hash(new_password, salt);
 
         await User.findByIdAndUpdate(user._id,{password:hashPassword})
-        var mailOptions = {
-            from: '"Comestibles" <comestiblestech@gmail.com>', // sender address
-            to: user.email, // list of receivers
-            subject: "Password Changed", // Subject line
-            text: `Your Password has been changed. If you didnt change it yourself kindly contact support
-        `, // plain text body
-        };
+        const deviceDetector = new deviceDetector();
+        const userAgent = req.header("User-Agent")
+        const device = deviceDetector.parse(userAgent);
+        console.log(device,"device")
+                let mailOptions = {
+                    from: '"Nubyt" <support@nubyt.co>', // sender address
+                    to:  user.email, // list of receivers
+                    subject: "Password Changed", // Subject line
+                    template_name:"reset-password",
+                    data:{
+                        date:moment(Date.now()).format("DD/MM/YYYY HH:mm"),
+                        device:`${device.os.name} ${device.os.version} ,${device.device.type} ${device.device.brand}`
+                    } 
+                };
         await sendEmail(mailOptions)
         return response.sendSuccess({
             res,
