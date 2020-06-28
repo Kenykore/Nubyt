@@ -19,7 +19,7 @@ exports.UploadVideoCloundinary= async (req,res,next)=>{
         let user = req.user_details
         let video_upload=await cloudinary.uploader.upload_large(video,{resource_type: "video", 
         public_id: `video_posts/${user.user_id}/${name}_${new Date(Date.now())}`,format:"mp4",
-        transformation:{effect:"progressbar:bar:#ffd534:10",quality:"auto:good",duration:60,start_offset: "auto"}})
+        transformation:{effect:"progressbar:bar:FFD534:10",quality:"auto:good",duration:60,start_offset: "auto"}})
         if(video_upload){
             return response.sendSuccess({ res, message: "Media Uploaded Successfully", body: { data:video_upload } });
         }
