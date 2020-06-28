@@ -6,6 +6,7 @@ const ValidatePostCreation = (params) => {
         user_id:Joi.string().required(),
         description:Joi.string().optional(),
         media: Joi.string().required(),
+        media_id:Joi.string().required()
     });
     return schema.validate(params, {
         allowUnknown: true

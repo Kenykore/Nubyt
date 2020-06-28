@@ -15,6 +15,7 @@
     "bcryptjs": "^2.4.3",
     "body-parser": "^1.18.2",
     "cache-pug-templates": "^2.0.1",
+    "cloudinary": "^1.22.0",
     "cors": "^2.8.4",
     "cross-env": "^7.0.2",
     "crypto": "^1.0.1",

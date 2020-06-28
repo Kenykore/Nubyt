@@ -14,6 +14,9 @@ var postModel= new mongoose.Schema({
     description:{
         type:String,
     },
+    media_id:{
+        type:String,
+    },
     media:{
         type:String,
         required:true,

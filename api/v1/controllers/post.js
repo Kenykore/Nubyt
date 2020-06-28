@@ -11,9 +11,27 @@ const config = require("../../../config/index")
 const request = require('request-promise')
 const validatePostCreation= require("../../../validations/validate_create_post")
 const validatePostCommentCreation= require("../../../validations/validate_create_post_comment")
+const cloudinary = require('cloudinary').v2;
+exports.UploadVideoCloundinary= async (req,res,next)=>{
+    try {
+        let video= req.body.video
+        let name= req.body.name
+        let user = req.user_details
+        let video_upload=await cloudinary.uploader.upload_large(video,{resource_type: "video", 
+        public_id: `video_posts/${user.user_id}/${name}_${new Date(Date.now())}`,format:"mp4",
+        transformation:{effect:"progressbar:bar:#ffd534:10",quality:"auto:good",duration:60,start_offset: "auto"}})
+        if(video_upload){
+            return response.sendSuccess({ res, message: "Media Uploaded Successfully", body: { data:video_upload } });
+        }
+    } catch (error) {
+        console.log(error)
+        next(error)
+    }
+}
 exports.CreatePost= async(req,res,next)=>{
     try {
-        const { error } = validatePostCreation(req.body);
+        let user = req.user_details
+        const { error } = validatePostCreation({...req.body,user_id:user.user_id});
         if (error)
             return response.sendError({
                 res,
