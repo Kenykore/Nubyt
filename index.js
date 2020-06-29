@@ -37,7 +37,11 @@ io.on('connection', (socket) => {
         console.log("connect to private")
         const newNamespace = socket.nsp; 
         //newNamespace.emit('hello')
-        SocketClientService.listenToUploadEvent(user_id)
+        socket.on("upload_file",(data)=>{
+            console.log("upload file event")
+            SocketClientService.listenToUploadEvent(user_id,data)
+        })
+      
       });
     //   setTimeout(()=>{
     //     dynamicNsp.emit("hello",{second:true})

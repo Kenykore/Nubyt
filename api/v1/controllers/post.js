@@ -20,7 +20,7 @@ exports.uploadViaSocket=async(details)=>{
         let video= details.video
         let name= details.name
         let user = details.user_id
-        let public_id=`video_posts/${user.user_id}/${name}_${new Date(Date.now())}`
+        let public_id=`video_posts/${user}/${name}_${new Date(Date.now())}`
         let video_upload=await cloudinary.uploader.upload_large(video,{resource_type: "video", 
         public_id: public_id,format:"mp4",
         eager_async:true, 

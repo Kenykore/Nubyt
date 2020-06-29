@@ -30,15 +30,18 @@ const { uploadViaSocket } = require("../api/v1/controllers/post")
             console.log(error)
         }
     }
-    exports.listenToUploadEvent= (user_id)=>{
+    exports.listenToUploadEvent= async (user_id,details)=>{
         try {
-            const dynamicNsp = io.Socket.of(`/${user_id}`).on("upload_file", async (details) => {
-                console.log("upload file event called",details)
-                let res=await uploadViaSocket(details)
-                console.log(res)
-                console.log(res)
-               // newNamespace.emit('hello');
-              });
+            console.log(user_id,"user id")
+            let res=await uploadViaSocket(details)
+            console.log(res)
+            console.log(res)
+            // const dynamicNsp = io.Socket.of(`/${user_id}`).on("upload_file", async (details) => {
+            //     console.log("upload file event called",details)
+
+            //    // newNamespace.emit('hello');
+            //   });
+            //   console.log(dynamicNsp,"namespace")
             // console.log("function called",this.socket_connected)
             // this.socket_connected.on('connect', (socket) => {
             //     console.log("connect to private in self")
