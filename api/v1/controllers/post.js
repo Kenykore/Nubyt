@@ -12,6 +12,26 @@ const request = require('request-promise')
 const validatePostCreation= require("../../../validations/validate_create_post")
 const validatePostCommentCreation= require("../../../validations/validate_create_post_comment")
 const cloudinary = require('cloudinary').v2;
+const io = require('socket.io')();
+exports.uploadViaSocket=async(details)=>{
+    try {
+        let video= details.video
+        let name= details.name
+        let user = details.user_id
+        let video_upload=await cloudinary.uploader.upload_large(video,{resource_type: "video", 
+        public_id: `video_posts/${user.user_id}/${name}_${new Date(Date.now())}`,format:"mp4",
+        eager_async:true, 
+        eager:[
+            {effect:"progressbar:bar:FFD534:10",quality:"auto:good",duration:60,start_offset: "auto"}
+        ]
+        })
+        if(video_upload){
+            return {message: "Media Uploaded Successfully",body:{ data:video_upload }};
+        }
+    } catch (error) {
+        console.log(error)
+    }
+}
 exports.UploadVideoCloundinary= async (req,res,next)=>{
     try {
         let video= req.body.video
@@ -20,7 +40,10 @@ exports.UploadVideoCloundinary= async (req,res,next)=>{
         let video_upload=await cloudinary.uploader.upload_large(video,{resource_type: "video", 
         public_id: `video_posts/${user.user_id}/${name}_${new Date(Date.now())}`,format:"mp4",
         eager_async:true, 
-        transformation:{effect:"progressbar:bar:FFD534:10",quality:"auto:good",duration:60,start_offset: "auto"}})
+        eager:[
+            {effect:"progressbar:bar:FFD534:10",quality:"auto:good",duration:60,start_offset: "auto"}
+        ]
+        })
         if(video_upload){
             return response.sendSuccess({ res, message: "Media Uploaded Successfully", body: { data:video_upload } });
         }

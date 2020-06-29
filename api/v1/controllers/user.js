@@ -13,8 +13,9 @@ var nodemailer = require('nodemailer')
 var Email = require('email-templates')
 var moment = require('moment')
 const config = require("../../../config/index")
-const request = require('request-promise')
-
+const request = require('request-promise');
+const { emit } = require('process');
+const socket= require("../../../services/Socket")
 var selfSignedConfig = {
     service: 'gmail',
     auth: {
@@ -605,6 +606,7 @@ exports.getSingleUser = async function (req, res, next) {
                 following:user_following_count,
                 likes:user_likes
             }
+            socket.emitEvent("hello",user._id,{user:user})
             return response.sendSuccess({
                 res,
                 message: "User record found",
