@@ -14,11 +14,16 @@ const validatePostCreation= require("../../../validations/validate_create_post")
 const validatePostCommentCreation= require("../../../validations/validate_create_post_comment")
 const cloudinary = require('cloudinary').v2;
 const socket= require("../../../services/Socket")
+var firebase_admin = require("firebase-admin");
+
 const convertToBase64= require("base64-arraybuffer")
 exports.uploadViaSocket=async(details)=>{
     try {
+        let file = await uploadFile(details.name,details.video)
+
         console.log("processing upload via socket",details)
-        let video= convertToBase64.encode(details.video) 
+        console.log("file uploaded",file)
+        let video= file.file
         let name= details.name
         let user = details.user_id
         let public_id=`video_posts/${user}/${name}_${new Date(Date.now())}`
@@ -48,7 +53,7 @@ exports.uploadFinishedCloudinary= async(req,res,next)=>{
         let uploadData= req.body
         let upload_found=Upload.findOne({public_id:uploadData.public_id}).lean()
         if(upload_found){
-            socket.emitEvent("upload_done",upload_found.user_id,{data:uploadData,sucess:true,message:"Upload Done"})
+            socket.emitEvent("upload_done",upload_found.user_id,{data:uploadData,success:true,message:"Upload Done"})
         }
         else{
             socket.emitEvent("upload_done",upload_found.user_id,{data:uploadData,success:false,message:"Failed to find upload"})
@@ -491,4 +496,25 @@ exports.deleteUserPostComment=async(req,res,next)=>{
         console.log(error)
         next(error)
     }
+}
+function uploadFile(filename,image){
+    return new Promise((resolve)=>{
+        let bucket = firebase_admin.storage().bucket();
+        const file = bucket.file(filename);
+        file.save(image, {
+            metadata: { contentType: "video/mp4" },
+            public: true,
+            validation: 'md5'
+        }, function(error) {
+        
+            if (error) {
+                console.log('Unable to upload the image.',error);
+                resolve({success:true,error:error,file:null})
+            }
+        
+           resolve({success:true,error:null,file:file})
+        });
+    },(error)=>{
+        resolve({success:false,error:error,file:null})
+    })
 }

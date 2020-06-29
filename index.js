@@ -1,6 +1,14 @@
 require("dotenv").config();
 const config = require("./config/index");
 const app=require("./app")
+var admin = require("firebase-admin");
+
+var serviceAccount = require("./nubyt-70043-firebase-adminsdk-rjuuw-b78359151d.json");
+
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount),
+  databaseURL: "https://nubyt-70043.firebaseio.com"
+});
 const PORT = config.port;
 const path = require('path');
 const CachePugTemplates = require('cache-pug-templates');
