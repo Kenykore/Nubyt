@@ -16,7 +16,7 @@ const cloudinary = require('cloudinary').v2;
 const socket= require("../../../services/Socket")
 exports.uploadViaSocket=async(details)=>{
     try {
-        console.log("processing upload via socket")
+        console.log("processing upload via socket",details)
         let video= details.video
         let name= details.name
         let user = details.user_id

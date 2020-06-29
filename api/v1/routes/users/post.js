@@ -9,6 +9,7 @@ const { verifyUser,verifyNonBlockUser } = require("../../../../middlewares/verif
 const PostController = require("../../controllers/post");
 router.post("/", verifyUser,PostController.CreatePost);
 router.post("/upload", verifyUser,PostController.UploadVideoCloundinary);
+router.post("/upload/notification",PostController.uploadFinishedCloudinary);
 router.post("/comment", verifyUser,PostController.CreatePostComment);
 router.post("/report", verifyUser,PostController.ReportPost);
 router.post("/like", verifyUser,PostController.LikePost);
