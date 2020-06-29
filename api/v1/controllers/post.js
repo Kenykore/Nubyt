@@ -14,10 +14,11 @@ const validatePostCreation= require("../../../validations/validate_create_post")
 const validatePostCommentCreation= require("../../../validations/validate_create_post_comment")
 const cloudinary = require('cloudinary').v2;
 const socket= require("../../../services/Socket")
+const convertToBase64= require("base64-arraybuffer")
 exports.uploadViaSocket=async(details)=>{
     try {
         console.log("processing upload via socket",details)
-        let video= details.video
+        let video= convertToBase64.encode(details.video) 
         let name= details.name
         let user = details.user_id
         let public_id=`video_posts/${user}/${name}_${new Date(Date.now())}`
