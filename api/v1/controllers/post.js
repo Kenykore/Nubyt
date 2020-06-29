@@ -20,10 +20,13 @@ const convertToBase64= require("base64-arraybuffer")
 exports.uploadViaSocket=async(details)=>{
     try {
         let file = await uploadFile(details.name,details.video)
-
+        let url=await file.file.getSignedUrl({
+            action: 'read',
+            expires: '03-09-2491'
+          })
         console.log("processing upload via socket",details)
-        console.log("file uploaded",file)
-        let video= file.file
+        console.log("file uploaded",url)
+        let video= url[0]
         let name= details.name
         let user = details.user_id
         let public_id=`video_posts/${user}/${name}_${new Date(Date.now())}`
@@ -41,11 +44,11 @@ exports.uploadViaSocket=async(details)=>{
             time: new Date(Date.now())
         })
         if(video_upload){
-            return {message: "Media Uploaded Successfully",body:{ data:video_upload }};
+            return {message: "Media Uploaded Successfully",body:{ data:video_upload },error:null};
         }
     } catch (error) {
         console.log(error)
-        return error
+        return {error:error,success:false,message:error.message}
     }
 }
 exports.uploadFinishedCloudinary= async(req,res,next)=>{

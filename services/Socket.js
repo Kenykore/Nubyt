@@ -36,6 +36,10 @@ const { uploadViaSocket } = require("../api/v1/controllers/post")
             let res=await uploadViaSocket(details)
             console.log(res)
             console.log(res)
+            if(res.error!==null){
+                const dynamicNsp = io.Socket.of(`/${user_id}`)
+                dynamicNsp.emit("upload_error",{message:res.message,success:false})
+            }
             // const dynamicNsp = io.Socket.of(`/${user_id}`).on("upload_file", async (details) => {
             //     console.log("upload file event called",details)
 
