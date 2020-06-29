@@ -7,7 +7,9 @@ var serviceAccount = require("./nubyt-70043-firebase-adminsdk-rjuuw-b78359151d.j
 
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
-  databaseURL: "https://nubyt-70043.firebaseio.com"
+  databaseURL: "https://nubyt-70043.firebaseio.com",
+  storageBucket: "nubyt-70043.appspot.com",
+  projectId: "nubyt-70043",
 });
 const PORT = config.port;
 const path = require('path');
