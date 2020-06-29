@@ -38,11 +38,12 @@ exports.uploadViaSocket=async(details)=>{
             {effect:"progressbar:bar:FFD534:10",quality:"auto:good",duration:60,start_offset: "auto"}
         ]
         })
-        await Upload.create({
+       let upload= await Upload.create({
             user_id:details.user_id,
             public_id:public_id,
             time: new Date(Date.now())
         })
+        console.log(upload)
         if(video_upload){
             return {message: "Media Uploaded Successfully",body:{ data:video_upload },error:null};
         }
