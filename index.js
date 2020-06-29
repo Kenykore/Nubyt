@@ -36,7 +36,8 @@ io.on('connection', (socket) => {
     const dynamicNsp = io.of(`/${user_id}`).on('connect', (socket) => {
         console.log("connect to private")
         const newNamespace = socket.nsp; 
-        //newNamespace.emit('hello');
+        //newNamespace.emit('hello')
+        SocketClientService.listenToUploadEvent(user_id)
       });
     //   setTimeout(()=>{
     //     dynamicNsp.emit("hello",{second:true})

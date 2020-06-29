@@ -1,6 +1,7 @@
 var User = require('../../../models/users');
 var UserFollowers=require("../../../models/followers")
 var Post= require("../../../models/post")
+var Upload= require("../../../models/uploads")
 var PostComment= require("../../../models/post_comments")
 var ObjectID = require('mongoose').Types.ObjectId;
 const { randomNumber, formatPhoneNumber, addLeadingZeros, getUserDetails, getTimeWindow, getNextScheduleDate, getNextSchedulePayment } = require("../../../utilities/utils");
@@ -12,24 +13,49 @@ const request = require('request-promise')
 const validatePostCreation= require("../../../validations/validate_create_post")
 const validatePostCommentCreation= require("../../../validations/validate_create_post_comment")
 const cloudinary = require('cloudinary').v2;
-const io = require('socket.io')();
+const socket= require("../../../services/Socket")
 exports.uploadViaSocket=async(details)=>{
     try {
+        console.log("processing upload via socket")
         let video= details.video
         let name= details.name
         let user = details.user_id
+        let public_id=`video_posts/${user.user_id}/${name}_${new Date(Date.now())}`
         let video_upload=await cloudinary.uploader.upload_large(video,{resource_type: "video", 
-        public_id: `video_posts/${user.user_id}/${name}_${new Date(Date.now())}`,format:"mp4",
+        public_id: public_id,format:"mp4",
         eager_async:true, 
+        eager_notification_url:"https://nubyt-api.herokuapp.com/post/user/upload/notification",
         eager:[
             {effect:"progressbar:bar:FFD534:10",quality:"auto:good",duration:60,start_offset: "auto"}
         ]
+        })
+        await Upload.create({
+            user_id:details.user_id,
+            public_id:public_id,
+            time: new Date(Date.now())
         })
         if(video_upload){
             return {message: "Media Uploaded Successfully",body:{ data:video_upload }};
         }
     } catch (error) {
         console.log(error)
+        return error
+    }
+}
+exports.uploadFinishedCloudinary= async(req,res,next)=>{
+    try {
+        let uploadData= req.body
+        let upload_found=Upload.findOne({public_id:uploadData.public_id}).lean()
+        if(upload_found){
+            socket.emitEvent("upload_done",upload_found.user_id,{data:uploadData,sucess:true,message:"Upload Done"})
+        }
+        else{
+            socket.emitEvent("upload_done",upload_found.user_id,{data:uploadData,success:false,message:"Failed to find upload"})
+        }
+        res.send("done").status(200)
+    } catch (error) {
+        console.log(error)
+        next(error)
     }
 }
 exports.UploadVideoCloundinary= async (req,res,next)=>{

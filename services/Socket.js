@@ -1,5 +1,6 @@
 
 const io = require("../index")
+const { uploadViaSocket } = require("../api/v1/controllers/post")
  exports.emitEvent= (event,user_id,data)=> {
         try {
             const dynamicNsp = io.Socket.of(`/${user_id}`)
@@ -14,6 +15,28 @@ const io = require("../index")
                 console.log("event called",event)
                 const newNamespace = socket.nsp;
                 cb() 
+               // newNamespace.emit('hello');
+              });
+            // console.log("function called",this.socket_connected)
+            // this.socket_connected.on('connect', (socket) => {
+            //     console.log("connect to private in self")
+            //     const newNamespace = socket.nsp; 
+            //     newNamespace.emit('hello');
+            //   });
+            // //   setTimeout(
+            //     this.socket_connected.emit("hello",{second:true})
+            //   ,2000)
+        } catch (error) {
+            console.log(error)
+        }
+    }
+    exports.listenToUploadEvent= (user_id)=>{
+        try {
+            const dynamicNsp = io.Socket.of(`/${user_id}`).on("upload_file", async (details) => {
+                console.log("upload file event called",details)
+                let res=await uploadViaSocket(details)
+                console.log(res)
+                console.log(res)
                // newNamespace.emit('hello');
               });
             // console.log("function called",this.socket_connected)
