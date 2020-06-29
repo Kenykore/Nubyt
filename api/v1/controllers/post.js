@@ -54,6 +54,7 @@ exports.uploadViaSocket=async(details)=>{
 exports.uploadFinishedCloudinary= async(req,res,next)=>{
     try {
         let uploadData= req.body
+        console.log(uploadData,"data")
         let upload_found=Upload.findOne({public_id:uploadData.public_id}).lean()
         if(upload_found){
             socket.emitEvent("upload_done",upload_found.user_id,{data:uploadData,success:true,message:"Upload Done"})
