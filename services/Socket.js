@@ -61,5 +61,7 @@ const { uploadViaSocket } = require("../api/v1/controllers/post")
             //   ,2000)
         } catch (error) {
             console.log(error)
+            const dynamicNsp = io.Socket.of(`/${user_id}`)
+            dynamicNsp.emit("upload_error",{message:"Error uploading file"})
         }
     }

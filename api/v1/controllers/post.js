@@ -19,6 +19,7 @@ var firebase_admin = require("firebase-admin");
 const convertToBase64= require("base64-arraybuffer")
 exports.uploadViaSocket=async(details)=>{
     try {
+        console.log(details,"details")
         let file = await uploadFile(details.name,details.video,details.mode)
         let url=await file.file.getSignedUrl({
             action: 'read',
