@@ -113,19 +113,72 @@ exports.uploadFinishedCloudinary= async(req,res,next)=>{
 }
 exports.UploadVideoCloundinary= async (req,res,next)=>{
     try {
-        let video= req.body.video
-        let name= req.body.name
-        let user = req.user_details
-        let video_upload=await cloudinary.uploader.upload_large(video,{resource_type: "video", 
-        public_id: `video_posts/${user.user_id}/${name}_${new Date(Date.now())}`,format:"mp4",
-        eager_async:true, 
-        eager:[
-            {effect:"progressbar:bar:FFD534:10",quality:"auto:good",duration:60,start_offset: "auto"}
-        ]
-        })
-        if(video_upload){
-            return response.sendSuccess({ res, message: "Media Uploaded Successfully", body: { data:video_upload } });
+        let details=req.body
+        let file = await uploadFile(details.name,details.video,details.mode)
+        let url=await file.file.getSignedUrl({
+            action: 'read',
+            expires: '03-09-2491'
+          })
+        console.log("processing upload via socket",details)
+        console.log("file uploaded",url)
+        let video= url[0]
+        let name= details.name
+        let user = details.user_id
+        if(details.mode==="video"){
+            let public_id=`video_posts/${user}/${name}_${new Date(Date.now())}`
+            let video_upload=await cloudinary.uploader.upload_large(video,{resource_type: "video", 
+            public_id: public_id,format:"mp4",
+            eager_async:true, 
+            eager_notification_url:"https://nubyt-api.herokuapp.com/post/user/upload/notification",
+            eager:[{
+                fetch_format:"auto",
+                duration:60,
+                start_offset:0,
+                end_offset:60,
+                effect:"progressbar:bar:FFD534:30"
+            },{
+                quality:"auto",
+                dpr: "2.0",
+                gravity: "auto",
+                aspect_ratio: "1:1",
+            }, 
+            { streaming_profile: "full_hd", format: "m3u8" }]
+            })
+            let upload= await Upload.create({
+                user_id:details.user_id,
+                public_id:public_id,
+                time: new Date(Date.now()),
+                mode:details.mode,
+            })
+            if(video_upload){
+                return response.sendSuccess({ res, message: "Media Uploaded Successfully", body: { data:video_upload } });
+            }
         }
+        else{
+            let public_id=`music_posts/${user}/${name}_${new Date(Date.now())}`
+            let music_upload=await cloudinary.uploader.upload_large(video,{resource_type: "video", 
+            public_id: public_id,
+            eager_async:true, 
+            eager_notification_url:"https://nubyt-api.herokuapp.com/post/user/upload/notification",
+            eager:[{
+                fetch_format:"auto",
+                duration:60,
+                start_offset:0,
+                end_offset:60,
+            }],
+            })
+            let upload= await Upload.create({
+                user_id:details.user_id,
+                public_id:public_id,
+                time: new Date(Date.now()),
+                mode:details.mode,
+                video_id:details.video_id
+            })
+            if(music_upload){
+                return response.sendSuccess({ res, message: "Media Uploaded Successfully", body: { data:music_upload } });
+            }
+        }
+        return response.sendError({ res, message: "Media Uploaded Failed"});
     } catch (error) {
         console.log(error)
         next(error)
