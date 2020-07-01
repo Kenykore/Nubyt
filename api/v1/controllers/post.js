@@ -19,7 +19,7 @@ var firebase_admin = require("firebase-admin");
 const convertToBase64= require("base64-arraybuffer")
 exports.uploadViaSocket=async(details)=>{
     try {
-        let file = await uploadFile(details.name,details.video)
+        let file = await uploadFile(details.name,details.video,details.mode)
         let url=await file.file.getSignedUrl({
             action: 'read',
             expires: '03-09-2491'
@@ -29,24 +29,61 @@ exports.uploadViaSocket=async(details)=>{
         let video= url[0]
         let name= details.name
         let user = details.user_id
-        let public_id=`video_posts/${user}/${name}_${new Date(Date.now())}`
-        let video_upload=await cloudinary.uploader.upload_large(video,{resource_type: "video", 
-        public_id: public_id,format:"mp4",
-        eager_async:true, 
-        eager_notification_url:"https://nubyt-api.herokuapp.com/post/user/upload/notification",
-        eager:[
-            {effect:"progressbar:bar:FFD534:10",quality:"auto:good",duration:60,start_offset: "auto"}
-        ]
-        })
-       let upload= await Upload.create({
-            user_id:details.user_id,
-            public_id:public_id,
-            time: new Date(Date.now())
-        })
-        console.log(upload)
-        if(video_upload){
-            return {message: "Media Uploaded Successfully",body:{ data:video_upload },error:null};
+        if(details.mode==="video"){
+            let public_id=`video_posts/${user}/${name}_${new Date(Date.now())}`
+            let video_upload=await cloudinary.uploader.upload_large(video,{resource_type: "video", 
+            public_id: public_id,format:"mp4",
+            eager_async:true, 
+            eager_notification_url:"https://nubyt-api.herokuapp.com/post/user/upload/notification",
+            eager:[{
+                fetch_format:"auto",
+                duration:60,
+                start_offset:0,
+                end_offset:60,
+                effect:"progressbar:bar:FFD534:30"
+            },{
+                quality:"auto",
+                dpr: "2.0",
+                gravity: "auto",
+                aspect_ratio: "1:1",
+            }, 
+            { streaming_profile: "full_hd", format: "m3u8" }]
+            })
+            let upload= await Upload.create({
+                user_id:details.user_id,
+                public_id:public_id,
+                time: new Date(Date.now()),
+                mode:details.mode,
+            })
+            if(video_upload){
+                return {message: "Media Uploaded Successfully",body:{ data:video_upload },error:null};
+            }
         }
+        else{
+            let public_id=`music_posts/${user}/${name}_${new Date(Date.now())}`
+            let music_upload=await cloudinary.uploader.upload_large(video,{resource_type: "video", 
+            public_id: public_id,
+            eager_async:true, 
+            eager_notification_url:"https://nubyt-api.herokuapp.com/post/user/upload/notification",
+            eager:[{
+                fetch_format:"auto",
+                duration:60,
+                start_offset:0,
+                end_offset:60,
+            }],
+            })
+            let upload= await Upload.create({
+                user_id:details.user_id,
+                public_id:public_id,
+                time: new Date(Date.now()),
+                mode:details.mode,
+                video_id:details.video_id
+            })
+            if(music_upload){
+                return {message: "Media Uploaded Successfully",body:{ data:video_upload },error:null};
+            }
+        }     
+
     } catch (error) {
         console.log(error)
         return {error:error,success:false,message:error.message}
@@ -57,11 +94,15 @@ exports.uploadFinishedCloudinary= async(req,res,next)=>{
         let uploadData= req.body
         console.log(uploadData.public_id,"data")
         let upload_found=await Upload.findOne({public_id:uploadData.public_id}).lean()
-        if(upload_found){
-            socket.emitEvent("upload_done",upload_found.user_id,{data:uploadData,success:true,message:"Upload Done"})
+        if(upload_found.mode==="music"){
+            let music=cloudinary.video(upload_found.video_id, {overlay: `video:${uploadData.public_id}`, start_offset: "0", end_offset: "60",})
+            socket.emitEvent("upload_music_done",upload_found.user_id,{music:music,success:true,message:"Upload Done"})
+        }
+        else if(upload_found.mode==="video"){
+            socket.emitEvent("upload_video_done",upload_found.user_id,{data:uploadData,success:true,message:"Upload Done"})
         }
         else{
-            socket.emitEvent("upload_done",upload_found.user_id,{data:uploadData,success:false,message:"Failed to find upload"})
+            socket.emitEvent("upload_error",upload_found.user_id,{data:uploadData,success:false,message:`Failed to upload data`})
         }
         res.send("done").status(200)
     } catch (error) {
@@ -502,12 +543,12 @@ exports.deleteUserPostComment=async(req,res,next)=>{
         next(error)
     }
 }
-function uploadFile(filename,image){
+function uploadFile(filename,image,type="video"){
     return new Promise((resolve)=>{
         let bucket = firebase_admin.storage().bucket();
         const file = bucket.file(filename);
         file.save(image, {
-            metadata: { contentType: "video/mp4" },
+            metadata: { contentType:type==="video"?"video/mp4":"audio/mp3" },
             public: true,
             validation: 'md5'
         }, function(error) {
