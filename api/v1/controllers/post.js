@@ -35,22 +35,23 @@ exports.uploadViaSocket=async(details)=>{
             let video_upload=await cloudinary.uploader.upload_large(video,{resource_type: "video", 
             public_id: public_id,format:"mp4",
             secure:true,
-            eager_async:true, 
-            eager_notification_url:"https://nubyt-api.herokuapp.com/post/user/upload/notification",
-            eager:[{
-                fetch_format:"auto",
-                duration:60,
-                start_offset:0,
-                end_offset:60,
-                effect:"progressbar:bar:yellow:30"
-            },{
-                quality:"auto",
-                dpr: "2.0",
-                gravity: "auto",
-                aspect_ratio: "1:1",
-            }, 
-           {streaming_profile: "sd", format: "m3u8"}]
+        //     eager_async:true, 
+        //     eager_notification_url:"https://nubyt-api.herokuapp.com/post/user/upload/notification",
+        //     eager:[{
+        //         fetch_format:"auto",
+        //         duration:60,
+        //         start_offset:0,
+        //         end_offset:60,
+        //         effect:"progressbar:bar:yellow:30"
+        //     },{
+        //         quality:"auto",
+        //         dpr: "2.0",
+        //         gravity: "auto",
+        //         aspect_ratio: "1:1",
+        //     }, 
+        //    {streaming_profile: "sd", format: "m3u8"}]
             })
+       
             let upload= await Upload.create({
                 user_id:details.user_id,
                 public_id:public_id,
@@ -58,6 +59,7 @@ exports.uploadViaSocket=async(details)=>{
                 mode:details.mode,
             })
             if(video_upload){
+                socket.emitEvent("upload_video_done",details.user_id,{data:video_upload,success:true,message:"Upload Done"})
                 return {message: "Media Uploaded Successfully",body:{ data:video_upload },error:null};
             }
         }
@@ -65,14 +67,14 @@ exports.uploadViaSocket=async(details)=>{
             let public_id=`music_posts/${user}/${name}_${new Date(Date.now())}`
             let music_upload=await cloudinary.uploader.upload_large(video,{resource_type: "video", 
             public_id: public_id,
-            eager_async:true, 
-            eager_notification_url:"https://nubyt-api.herokuapp.com/post/user/upload/notification",
-            eager:[{
-                fetch_format:"auto",
-                duration:60,
-                start_offset:0,
-                end_offset:60,
-            }],
+            // eager_async:true, 
+            // eager_notification_url:"https://nubyt-api.herokuapp.com/post/user/upload/notification",
+            // eager:[{
+            //     fetch_format:"auto",
+            //     duration:60,
+            //     start_offset:0,
+            //     end_offset:60,
+            // }],
             })
             let upload= await Upload.create({
                 user_id:details.user_id,
@@ -82,7 +84,9 @@ exports.uploadViaSocket=async(details)=>{
                 video_id:details.video_id
             })
             if(music_upload){
-                return {message: "Media Uploaded Successfully",body:{ data:video_upload },error:null};
+                let music=cloudinary.video(details.video_id, {overlay: `video:${public_id}`, start_offset: "0", end_offset: "60",})
+                socket.emitEvent("upload_music_done",details.user_id,{music:music,success:true,message:"Upload Done"})
+                return {message: "Media Uploaded Successfully",body:{ data:music_upload },error:null};
             }
         }     
 
