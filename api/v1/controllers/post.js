@@ -106,7 +106,7 @@ exports.uploadFinishedCloudinary= async(req,res,next)=>{
         else{
             socket.emitEvent("upload_error",upload_found.user_id,{data:uploadData,success:false,message:`Failed to upload data`})
         }
-        res.send("done").status(200)
+       return res.send("done").status(200)
     } catch (error) {
         console.log(error)
         next(error)
