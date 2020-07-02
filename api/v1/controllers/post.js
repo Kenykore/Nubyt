@@ -34,6 +34,7 @@ exports.uploadViaSocket=async(details)=>{
             let public_id=`video_posts/${user}/${name}_${new Date(Date.now())}`
             let video_upload=await cloudinary.uploader.upload_large(video,{resource_type: "video", 
             public_id: public_id,format:"mp4",
+            secure:true,
             eager_async:true, 
             eager_notification_url:"https://nubyt-api.herokuapp.com/post/user/upload/notification",
             eager:[{
@@ -41,14 +42,14 @@ exports.uploadViaSocket=async(details)=>{
                 duration:60,
                 start_offset:0,
                 end_offset:60,
-                effect:"progressbar:bar:FFD534:30"
+                effect:"progressbar:bar:yellow:30"
             },{
                 quality:"auto",
                 dpr: "2.0",
                 gravity: "auto",
                 aspect_ratio: "1:1",
             }, 
-            { streaming_profile: "full_hd", format: "m3u8" }]
+           {streaming_profile: "sd", format: "m3u8"}]
             })
             let upload= await Upload.create({
                 user_id:details.user_id,
