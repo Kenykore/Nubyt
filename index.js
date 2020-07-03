@@ -48,10 +48,9 @@ io.on('connection', (socket) => {
         const newNamespace = socket.nsp; 
         //newNamespace.emit('hello')
         socket.on("upload_file",(data)=>{
-            console.log("upload file event")
-            SocketClientService.listenToUploadEvent(user_id,data)
-        })
-      
+          console.log("upload file event")
+          SocketClientService.listenToUploadEvent(user_id,data)
+      })  
       });
     //   setTimeout(()=>{
     //     dynamicNsp.emit("hello",{second:true})
@@ -59,6 +58,7 @@ io.on('connection', (socket) => {
      
     socket.on('disconnect', () => {
         console.log('user disconnected');
+        dynamicNsp.removeAllListeners("upload_file")
       });
   });
 

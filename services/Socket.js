@@ -40,11 +40,6 @@ const { uploadViaSocket } = require("../api/v1/controllers/post")
             if(res.error!==null){
                 dynamicNsp.emit("upload_error",{message:res.message,success:false,mode:details.mode})
             }
-            if(details.mode==="music"){
-                dynamicNsp.off("upload_music_done")
-            }else{
-                dynamicNsp.off("upload_video_done")
-            }
             return
             // else{
             //     const dynamicNsp = io.Socket.of(`/${user_id}`)
