@@ -64,7 +64,7 @@ exports.uploadViaSocket=async(details)=>{
             }
         }
         else{
-            let public_id=`music_posts/${user}/${name}_${new Date(Date.now())}`
+            let public_id=`music_posts/${user}/${name}`
             let music_upload=await cloudinary.uploader.upload_large(video,{resource_type: "video", 
             public_id: public_id,
             // eager_async:true, 
