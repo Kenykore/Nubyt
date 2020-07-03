@@ -84,8 +84,8 @@ exports.uploadViaSocket=async(details)=>{
                 video_id:details.video_id
             })
             if(music_upload){
-                let music=cloudinary.video(details.video_id, {overlay: `video:${public_id}`, start_offset: "0", end_offset: "60",})
-                socket.emitEvent("upload_music_done",details.user_id,{music:music,success:true,message:"Upload Done"})
+                // let music=cloudinary.video(details.video_id, {overlay: `video:${public_id}`, start_offset: "0", end_offset: "60",})
+                socket.emitEvent("upload_music_done",details.user_id,{music:music_upload,success:true,message:"Upload Done"})
                 return {message: "Media Uploaded Successfully",body:{ data:music_upload },error:null};
             }
         }     
