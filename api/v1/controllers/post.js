@@ -420,6 +420,7 @@ exports.GetUsersFollowingPost=  async(req,res,next)=>{
         const postPerPage = parseInt(req.query.limit) || 10;
         let currentPage = parseInt(req.query.page) || 0;
         const skip = currentPage * postPerPage;
+        console.log(user,"user")
         let user_following=await UserFollowers.find({follower_id:user.user_id}).lean()
         if(!user_following){
             return response.sendError({ res, message: "No Post found", statusCode: status.NOT_FOUND }); 
