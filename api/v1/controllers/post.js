@@ -419,7 +419,7 @@ exports.GetUsersFollowingPost=  async(req,res,next)=>{
         let user = req.user_details
         const postPerPage = parseInt(req.query.limit) || 10;
         let currentPage = parseInt(req.query.page) || 0;
-        const skip = currentPage * usersPerPage;
+        const skip = currentPage * postPerPage;
         let user_following=await UserFollowers.find({follower_id:user.user_id}).lean()
         if(!user_following){
             return response.sendError({ res, message: "No Post found", statusCode: status.NOT_FOUND }); 
@@ -470,7 +470,7 @@ exports.GetRelatedUsersPost=async(req,res,next)=>{
         let user = req.user_details
         const postPerPage = parseInt(req.query.limit) || 10;
         let currentPage = parseInt(req.query.page) || 0;
-        const skip = currentPage * usersPerPage;
+        const skip = currentPage * postPerPage;
         
         const totalposts = await Post.find({
             flagged_count:{ $lt: 20 },
