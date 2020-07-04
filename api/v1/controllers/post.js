@@ -429,10 +429,16 @@ exports.GetUsersFollowingPost=  async(req,res,next)=>{
         let following=[]
         for(let f of user_following){
             let user_data=await User.findById(f.user_id).lean()
-            let user_blocked= user_data.blacklist.find(x=>x===user.user_id) || {}
+            console.log(user_data,"user")
+            if(user_data.blacklist && user_data.blacklist.length>0){
+                let user_blocked= user_data.blacklist.find(x=>x===user.user_id) || {}
         if(!user_blocked){
             following.push(f.user_id)
-        } 
+        }
+        continue   
+            }
+            following.push(f.user_id)
+          
         }
         console.log(following,"following users")
         const totalposts = await Post.find({
