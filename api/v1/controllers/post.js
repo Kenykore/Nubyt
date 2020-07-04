@@ -428,8 +428,8 @@ exports.GetUsersFollowingPost=  async(req,res,next)=>{
         }
         let following=[]
         for(let f of user_following){
-            let user_following=await User.findById(f.user_id).lean()
-            let user_blocked= user_following.blacklist.find(x=>x===user.user_id) || {}
+            let user_data=await User.findById(f.user_id).lean()
+            let user_blocked= user_data.blacklist.find(x=>x===user.user_id) || {}
         if(!user_blocked){
             following.push(f.user_id)
         } 
@@ -485,8 +485,8 @@ exports.GetRelatedUsersPost=async(req,res,next)=>{
         }).sort({ _id: "desc" }).skip(skip).limit(postPerPage).lean();
         let post_data=[]
         for(let p of posts){
-            let user=await User.findById(p.user_id).lean()
-            post_data.push({...p,user:user})
+            let user_data=await User.findById(p.user_id).lean()
+            post_data.push({...p,user:user_data})
         }
         const totalPages = Math.ceil(totalposts / postPerPage);
         if(post_data && post_data.length){
