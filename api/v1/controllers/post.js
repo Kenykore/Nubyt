@@ -425,7 +425,7 @@ exports.GetUsersFollowingPost=  async(req,res,next)=>{
             return response.sendError({ res, message: "No Post found", statusCode: status.NOT_FOUND }); 
         }
         let following=[]
-        for(let f of user_followers){
+        for(let f of user_following){
             let user_following=await User.findById(f.user_id).lean()
             let user_blocked= user_following.blacklist.find(x=>x===user.user_id) || {}
         if(!user_blocked){
