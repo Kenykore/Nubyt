@@ -20,7 +20,10 @@ let users = [
         mobile: "+2348133699506",
         name: "Keny Test 1",
         dob: "Jul 02 2020 11:50:02 GMT+0000 ",
-        gender: "male"
+        gender: "male",
+        activated:true,
+        blacklist:[],
+        favourites:[]
     },
     {
         username: "kenykore2",
@@ -30,7 +33,10 @@ let users = [
         mobile: "+2348133699507",
         name: "Keny Test 2",
         dob: "Jul 02 2020 11:50:02 GMT+0000 ",
-        gender: "male"
+        gender: "male",
+        activated:true,
+        blacklist:[],
+        favourites:[]
     },
     {
         username: "kenykore3",
@@ -40,7 +46,10 @@ let users = [
         mobile: "+2348133699508",
         name: "Keny Test 3",
         dob: "Jul 02 2020 11:50:02 GMT+0000 ",
-        gender: "male"
+        gender: "male",
+        activated:true,
+        blacklist:[],
+        favourites:[]
     },
     {
         username: "kenykore4",
@@ -50,7 +59,10 @@ let users = [
         mobile: "+2348133699509",
         name: "Keny Test 4",
         dob: "Jul 02 2020 11:50:02 GMT+0000 ",
-        gender: "male"
+        gender: "male",
+        activated:true,
+        blacklist:[],
+        favourites:[]
     },
     {
         username: "kenykore5",
@@ -60,7 +72,10 @@ let users = [
         mobile: "+2348133699506",
         name: "Keny Test 5",
         dob: "Jul 02 2020 11:50:02 GMT+0000 ",
-        gender: "male"
+        gender: "male",
+        activated:true,
+        blacklist:[],
+        favourites:[]
     }
 ]
 let base_filters = [
@@ -133,7 +148,7 @@ async function createPost() {
                 console.log(image[1].slice(0,image[1].length-1),"image")
                 //console.log(myRegex.exec(poster_image)[1],"img url")
                 let post_to_create = {
-                    user_id: user_Created.insertedId,
+                    user_id: user_Created.insertedId.toString(),
                     time: new Date(Date.now()),
                     title: "Hello there",
                     description: `Hello this is a test post A ${i}`,
@@ -161,7 +176,7 @@ async function createPost() {
                 console.log(image,"image array")
                 console.log(image[1].slice(0,image[1].length-1),"image")
                 let post_to_create = {
-                    user_id: user_Created.insertedId,
+                    user_id: user_Created.insertedId.toString(),
                     time: new Date(Date.now()),
                     title: "Hello there",
                     description: `Hello this is a test post B ${j}`,
@@ -180,18 +195,18 @@ async function createPost() {
         console.log("ended all post creation");
         console.log("Following users started...")
         for (let u of user_id) {
-            let other_users = lodash.sampleSize(user_id.filter(x => x !== u),3)
+            let other_users = lodash.sampleSize(user_id.filter(x => x.toString() !== u.toString()),3)
             let followers=[]
             for (let f of other_users) {
                 let follower_data = {
-                    user_id: u,
-                    follower_id: f,
+                    user_id: u.toString(),
+                    follower_id: f.toString(),
                     time: new Date(Date.now())
                 }
                 followers.push(follower_data)
             }
            let followers_inserted= await followerDB.insertMany(followers)
-            console.log(followers_inserted,"followers inserted")
+            console.log(followers_inserted.ops,"followers inserted")
         }
         console.log("Following users ended...")
         return "done"

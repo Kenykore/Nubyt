@@ -422,6 +422,7 @@ exports.GetUsersFollowingPost=  async(req,res,next)=>{
         const skip = currentPage * postPerPage;
         console.log(user,"user")
         let user_following=await UserFollowers.find({follower_id:user.user_id}).lean()
+        console.log(user_following,"user following")
         if(!user_following){
             return response.sendError({ res, message: "No Post found", statusCode: status.NOT_FOUND }); 
         }
@@ -433,6 +434,7 @@ exports.GetUsersFollowingPost=  async(req,res,next)=>{
             following.push(f.user_id)
         } 
         }
+        console.log(following,"following users")
         const totalposts = await Post.find({
             flagged_count:{ $lt: 20 },
            user_id:{ $in: following }
@@ -442,7 +444,7 @@ exports.GetUsersFollowingPost=  async(req,res,next)=>{
             user_id:{ $in: following }
         }).sort({ _id: "desc" }).skip(skip).limit(postPerPage).lean();
         const totalPages = Math.ceil(totalposts / postPerPage);
-        const post_data=[]
+        let post_data=[]
         for(let p of posts){
             let user=await User.findById(p.user_id).lean()
             post_data.push({...p,user:user})
@@ -481,7 +483,7 @@ exports.GetRelatedUsersPost=async(req,res,next)=>{
             flagged_count:{ $lt: 20 },
             user_id:{ $in: user.favourites||[] }
         }).sort({ _id: "desc" }).skip(skip).limit(postPerPage).lean();
-        const post_data=[]
+        let post_data=[]
         for(let p of posts){
             let user=await User.findById(p.user_id).lean()
             post_data.push({...p,user:user})
