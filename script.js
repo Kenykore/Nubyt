@@ -152,11 +152,14 @@ async function createPost() {
                     time: new Date(Date.now()),
                     title: "Hello there",
                     description: `Hello this is a test post A ${i}`,
+                    visibility:"public",
                     media_id: media_id,
+                    flagged_count:0,
                     poster_image: `${image[1].slice(0,image[1].length-1)}`,
                     sound_id: music_selected,
                     filters: filters,
                     media: media,
+                    comment_disabled:false,
                     tags: lodash.sampleSize(tags, 2)
                 }
                 let post_created = await postDB.insertOne(post_to_create)
@@ -178,6 +181,9 @@ async function createPost() {
                 let post_to_create = {
                     user_id: user_Created.insertedId.toString(),
                     time: new Date(Date.now()),
+                    flagged_count:0,
+                    comment_disabled:false,
+                    visibility:"public",
                     title: "Hello there",
                     description: `Hello this is a test post B ${j}`,
                     media_id: media_id,

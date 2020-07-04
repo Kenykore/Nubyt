@@ -461,7 +461,7 @@ exports.GetUsersFollowingPost=  async(req,res,next)=>{
                 "pagination": {
                     "current": currentPage,
                     "number_of_pages": totalPages,
-                    "perPage": usersPerPage,
+                    "perPage": postPerPage,
                     "next": currentPage === totalPages ? currentPage : currentPage + 1
                 },
                 data: post_data
@@ -501,7 +501,7 @@ exports.GetRelatedUsersPost=async(req,res,next)=>{
                 "pagination": {
                     "current": currentPage,
                     "number_of_pages": totalPages,
-                    "perPage": usersPerPage,
+                    "perPage": postPerPage,
                     "next": currentPage === totalPages ? currentPage : currentPage + 1
                 },
                 data: post_data
