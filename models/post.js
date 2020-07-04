@@ -9,13 +9,20 @@ var postModel= new mongoose.Schema({
     time:Date,
     title:{
         type:String,
-        required:true
     },
     description:{
         type:String,
     },
     media_id:{
         type:String,
+    },
+    poster_image:{
+        type:String,
+    },
+    filters:[],
+    sound_id:{
+        type:String,
+        default:null
     },
     media:{
         type:String,
@@ -44,6 +51,11 @@ var postModel= new mongoose.Schema({
         type:Boolean,
         default:true
     },
+    visibility:{
+        type:String,
+        enum:["public","friends"],
+        default:"public"
+    }
 
     }, {
         timestamps: true

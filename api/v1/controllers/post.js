@@ -31,7 +31,7 @@ exports.uploadViaSocket=async(details)=>{
         let name= details.name
         let user = details.user_id
         if(details.mode==="video"){
-            let public_id=`video_posts/${user}/${name}_${new Date(Date.now())}`
+            let public_id=`video_posts/${user}/${name}`
             let video_upload=await cloudinary.uploader.upload_large(video,{resource_type: "video", 
             public_id: public_id,format:"mp4",
             secure:true,
@@ -52,12 +52,7 @@ exports.uploadViaSocket=async(details)=>{
         //    {streaming_profile: "sd", format: "m3u8"}]
             })
        
-            let upload= await Upload.create({
-                user_id:details.user_id,
-                public_id:public_id,
-                time: new Date(Date.now()),
-                mode:details.mode,
-            })
+       
             if(video_upload){
                 socket.emitEvent("upload_video_done",details.user_id,{data:video_upload,success:true,message:"Upload Done"})
                 return {message: "Media Uploaded Successfully",body:{ data:video_upload },error:null};
@@ -76,13 +71,7 @@ exports.uploadViaSocket=async(details)=>{
             //     end_offset:60,
             // }],
             })
-            let upload= await Upload.create({
-                user_id:details.user_id,
-                public_id:public_id,
-                time: new Date(Date.now()),
-                mode:details.mode,
-                video_id:details.video_id
-            })
+        
             if(music_upload){
                 // let music=cloudinary.video(details.video_id, {overlay: `video:${public_id}`, start_offset: "0", end_offset: "60",})
                 socket.emitEvent("upload_music_done",details.user_id,{music:music_upload,success:true,message:"Upload Done"})
@@ -198,9 +187,14 @@ exports.CreatePost= async(req,res,next)=>{
                 res,
                 message: error.details[0].message
             });
+    let media=cloudinary.url(req.body.media_id,{secure:true,transformation:[...body.filters,{effect:"progressbar:bar:yellow:30"}]})
+    let poster_image=cloudinary.image(req.body.media_id,{secure:true})
+    let myRegex =  /<img[^>]+src='?([^"\s]+)'?\s*\/>/g;
+    let image=myRegex.exec(poster_image)
     let post_created= await Post.create({
         ...req.body,
-        time:new Date(Date.now())
+        media_id:media,
+        poster_image:`${image[1].slice(0,image[1].length-1)}`,
     })
     if(post_created){
         return response.sendSuccess({ res, message: "Post Created Successfully", body: { post: post_created } });
@@ -445,9 +439,14 @@ exports.GetUsersFollowingPost=  async(req,res,next)=>{
         const posts = await Post.find({
             flagged_count:{ $lt: 20 },
             user_id:{ $in: following }
-        }).sort({ _id: "desc" }).skip(skip).limit(postPerPage);
+        }).sort({ _id: "desc" }).skip(skip).limit(postPerPage).lean();
         const totalPages = Math.ceil(totalposts / postPerPage);
-        if(posts && posts.length){
+        const post_data=[]
+        for(let p of posts){
+            let user=await User.findById(p.user_id).lean()
+            post_data.push({...p,user:user})
+        }
+        if(post_data && post_data.length){
             const responseContent = {
                 "total_posts": totalposts,
                 "pagination": {
@@ -456,7 +455,7 @@ exports.GetUsersFollowingPost=  async(req,res,next)=>{
                     "perPage": usersPerPage,
                     "next": currentPage === totalPages ? currentPage : currentPage + 1
                 },
-                data: posts
+                data: post_data
             }
             return response.sendSuccess({ res, message: "Posts  found", body: responseContent });
         }
@@ -480,9 +479,14 @@ exports.GetRelatedUsersPost=async(req,res,next)=>{
         const posts = await Post.find({
             flagged_count:{ $lt: 20 },
             user_id:{ $in: user.favourites||[] }
-        }).sort({ _id: "desc" }).skip(skip).limit(postPerPage);
+        }).sort({ _id: "desc" }).skip(skip).limit(postPerPage).lean();
+        const post_data=[]
+        for(let p of posts){
+            let user=await User.findById(p.user_id).lean()
+            post_data.push({...p,user:user})
+        }
         const totalPages = Math.ceil(totalposts / postPerPage);
-        if(posts && posts.length){
+        if(post_data && post_data.length){
             const responseContent = {
                 "total_posts": totalposts,
                 "pagination": {
@@ -491,7 +495,7 @@ exports.GetRelatedUsersPost=async(req,res,next)=>{
                     "perPage": usersPerPage,
                     "next": currentPage === totalPages ? currentPage : currentPage + 1
                 },
-                data: posts
+                data: post_data
             }
             return response.sendSuccess({ res, message: "Posts  found", body: responseContent });
         }
@@ -508,10 +512,11 @@ exports.GetSinglePost=async (req,res,next)=>{
         } 
         const post = await Post.findOne({_id:ObjectID(req.params.post_id), flagged_count:{ $lt: 20 }}).lean()
         if(post){
+            let user=await User.findById(post.user_id).lean()
             return response.sendSuccess({
                 res,
                 message: "User record found",
-                body: { data: post }
+                body: { data: {...post,user:user} }
             });  
         }
         return response.sendError({
@@ -539,9 +544,10 @@ exports.LikePost=async(req,res,next)=>{
            $inc:{
                likes:1
            }
-       }) 
+       }).lean() 
        if(post_liked){
-        return response.sendSuccess({ res, message: "Posts liked", body: post_liked });
+        let user=await User.findById(post_liked.user_id).lean()
+        return response.sendSuccess({ res, message: "Posts liked", body: {...post_liked,user:user} });
        }
        return response.sendError({ res, message: "Unabled to like Post" });
 
@@ -563,9 +569,10 @@ exports.UnLikePost=async(req,res,next)=>{
            $inc:{
                likes:-1
            }
-       }) 
+       }).lean() 
        if(post_unliked){
-        return response.sendSuccess({ res, message: "Posts unliked", body: post_unliked });
+        let user=await User.findById(post_unliked.user_id).lean()
+        return response.sendSuccess({ res, message: "Posts unliked", body: {...post_unliked,user:user} });
        }
        return response.sendError({ res, message: "Unabled to unlike Post" });
 
