@@ -236,7 +236,7 @@ exports.viewPost=async(req,res,next)=>{
            $inc:{
             views :1
            }
-       }).lean() 
+       },{new:true,upsert:true}).lean() 
        if(post_viewed){
         let user=await User.findById(post_viewed.user_id).lean()
         return response.sendSuccess({ res, message: "Posts viewed successfully", body: {...post_viewed,user:user} });
