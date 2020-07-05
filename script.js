@@ -84,7 +84,7 @@ let users = [
     }
 ]
 let base_filters = [
-    { effect: "volume:-100" }, { effect: "progressbar:bar:yellow:30" },
+    { effect: "volume:-100" },
 ]
 let user_id = []
 let overlay_filters = [
@@ -145,7 +145,7 @@ async function createPost() {
                 let media_id = lodash.sample(video_id)
                 let media = cloudinary.url(media_id, { transformation: filters ,secure:true,resource_type:"video"})
 
-                const poster_image = cloudinary.image(media_id,{secure:true,format:"svg"})
+                const poster_image = cloudinary.image(`${media_id}.jpg`,{secure:true,resource_type: "video"})
                 console.log(poster_image,"poster image")
                 let myRegex =  /<img[^>]+src='?([^"\s]+)'?\s*\/>/g;
                 let image=myRegex.exec(poster_image)
@@ -179,7 +179,7 @@ async function createPost() {
                 let filters = [selected_filter, ...base_filters, music_filter]
                 let media_id = lodash.sample(video_id)
                 let media = cloudinary.url(media_id, { transformation: filters,secure:true ,resource_type:"video"})
-                let poster_image = cloudinary.image(media_id,{secure:true,format:"svg"})
+                let poster_image = cloudinary.image(`${media_id}.jpg`,{secure:true,resource_type: "video"})
                 let myRegex =  /<img[^>]+src='?([^"\s]+)'?\s*\/>/g;
                 let image=myRegex.exec(poster_image)
                 console.log(image,"image array")
