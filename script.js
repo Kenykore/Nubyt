@@ -22,6 +22,7 @@ let users = [
         dob: "Jul 02 2020 11:50:02 GMT+0000 ",
         gender: "male",
         activated:true,
+        verified:false,
         blacklist:[],
         favourites:[]
     },
@@ -35,6 +36,7 @@ let users = [
         dob: "Jul 02 2020 11:50:02 GMT+0000 ",
         gender: "male",
         activated:true,
+        verified:true,
         blacklist:[],
         favourites:[]
     },
@@ -48,6 +50,7 @@ let users = [
         dob: "Jul 02 2020 11:50:02 GMT+0000 ",
         gender: "male",
         activated:true,
+        verified:true,
         blacklist:[],
         favourites:[]
     },
@@ -61,6 +64,7 @@ let users = [
         dob: "Jul 02 2020 11:50:02 GMT+0000 ",
         gender: "male",
         activated:true,
+        verified:false,
         blacklist:[],
         favourites:[]
     },
@@ -74,6 +78,7 @@ let users = [
         dob: "Jul 02 2020 11:50:02 GMT+0000 ",
         gender: "male",
         activated:true,
+        verified:false,
         blacklist:[],
         favourites:[]
     }
@@ -140,7 +145,7 @@ async function createPost() {
                 let media_id = lodash.sample(video_id)
                 let media = cloudinary.url(media_id, { transformation: filters ,secure:true,resource_type:"video"})
 
-                const poster_image = cloudinary.image(media_id,{secure:true})
+                const poster_image = cloudinary.image(media_id,{secure:true,format:"svg"})
                 console.log(poster_image,"poster image")
                 let myRegex =  /<img[^>]+src='?([^"\s]+)'?\s*\/>/g;
                 let image=myRegex.exec(poster_image)
@@ -174,7 +179,7 @@ async function createPost() {
                 let filters = [selected_filter, ...base_filters, music_filter]
                 let media_id = lodash.sample(video_id)
                 let media = cloudinary.url(media_id, { transformation: filters,secure:true ,resource_type:"video"})
-                let poster_image = cloudinary.image(media_id,{secure:true})
+                let poster_image = cloudinary.image(media_id,{secure:true,format:"svg"})
                 let myRegex =  /<img[^>]+src='?([^"\s]+)'?\s*\/>/g;
                 let image=myRegex.exec(poster_image)
                 console.log(image,"image array")
