@@ -302,7 +302,7 @@ exports.GetUsersPost= async(req,res,next)=>{
         let user = req.user_details
         const postPerPage = parseInt(req.query.limit) || 10;
         let currentPage = parseInt(req.query.page) || 0;
-        const skip = currentPage * usersPerPage;
+        const skip = currentPage * postPerPage;
         const totalposts = await Post.find({
            user_id:user.user_id,
            flagged_count:{ $lt: 20 }
@@ -318,7 +318,7 @@ exports.GetUsersPost= async(req,res,next)=>{
                 "pagination": {
                     "current": currentPage,
                     "number_of_pages": totalPages,
-                    "perPage": usersPerPage,
+                    "perPage": postPerPage,
                     "next": currentPage === totalPages ? currentPage : currentPage + 1
                 },
                 data: posts
@@ -404,7 +404,7 @@ exports.GetAUserPost= async(req,res,next)=>{
         let user = req.params.user_id
         const postPerPage = parseInt(req.query.limit) || 10;
         let currentPage = parseInt(req.query.page) || 0;
-        const skip = currentPage * usersPerPage;
+        const skip = currentPage * postPerPage;
         const totalposts = await Post.find({
            user_id:user,
            flagged_count:{ $lt: 20 }
@@ -420,7 +420,7 @@ exports.GetAUserPost= async(req,res,next)=>{
                 "pagination": {
                     "current": currentPage,
                     "number_of_pages": totalPages,
-                    "perPage": usersPerPage,
+                    "perPage": postPerPage,
                     "next": currentPage === totalPages ? currentPage : currentPage + 1
                 },
                 data: posts
