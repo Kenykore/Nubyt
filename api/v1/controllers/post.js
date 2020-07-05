@@ -229,6 +229,25 @@ exports.ReportPost=async(req,res,next)=>{
         next(error)
     }
 }
+exports.viewPost=async(req,res,next)=>{
+    try {
+       let post_id= req.body.post_id
+       let post_viewed= await Post.findByIdAndUpdate(post_id,{
+           $inc:{
+            views :1
+           }
+       }).lean() 
+       if(post_viewed){
+        let user=await User.findById(post_viewed.user_id).lean()
+        return response.sendSuccess({ res, message: "Posts viewed successfully", body: {...post_viewed,user:user} });
+       }
+       return response.sendError({ res, message: "Unabled to report viewing Post" });
+
+    } catch (error) {
+        console.log(error)
+        next(error)
+    }
+}
 exports.CreatePostComment= async(req,res,next)=>{
     try {
         const { error } = validatePostCommentCreation(req.body);

@@ -12,6 +12,7 @@ router.post("/upload", verifyUser,PostController.UploadVideoCloundinary);
 router.post("/upload/notification",PostController.uploadFinishedCloudinary);
 router.post("/comment", verifyUser,PostController.CreatePostComment);
 router.post("/report", verifyUser,PostController.ReportPost);
+router.post("/view",PostController.viewPost);
 router.post("/like", verifyUser,PostController.LikePost);
 router.post("/unlike", verifyUser,PostController.UnLikePost);
 router.get("/",verifyUser,PostController.GetUsersPost)
