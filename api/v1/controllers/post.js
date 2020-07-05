@@ -483,11 +483,9 @@ exports.GetRelatedUsersPost=async(req,res,next)=>{
         
         const totalposts = await Post.find({
             flagged_count:{ $lt: 20 },
-           user_id:{ $in: user.favourites||[] }
-        }).countDocuments();
+           }).countDocuments();
         const posts = await Post.find({
             flagged_count:{ $lt: 20 },
-            user_id:{ $in: user.favourites||[] }
         }).sort({ _id: "desc" }).skip(skip).limit(postPerPage).lean();
         let post_data=[]
         for(let p of posts){
