@@ -262,7 +262,8 @@ exports.CreatePostComment= async(req,res,next)=>{
         
         let post_found=await Post.findById(req.body.post_id).lean()
         let user_found= await User.findById(post_found.user_id).lean()
-        let user_blocked= user_found. blacklist.find(x=>x===req.user_details.user_id) || {}
+        let user_blocked= user_found. blacklist.find(x=>x===req.user_details.user_id)
+        console.log(user_blocked)
         if(user_blocked){
             return response.sendError({
                 res,
@@ -345,14 +346,14 @@ exports.GetPostComments= async(req,res,next)=>{
         }).countDocuments();
         const post_comments = await PostComment.find({
             post_id:req.params.post_id
-        }).sort({ _id: "desc" }).skip(skip).limit(postPerPage);
+        }).sort({ _id: "desc" }).skip(skip).limit(postPerPage).lean();
         const totalPages = Math.ceil(totalposts / postPerPage);
         let comment_data=[]
         for(let c of post_comments){
             let user=await User.findById(c.user_id).lean()
             comment_data.push({...c,user:user})
         }
-        if(post_comments && post_comments.length){
+        if(comment_data && comment_data.length){
             const responseContent = {
                 "total_posts": totalposts,
                 "pagination": {
@@ -361,7 +362,7 @@ exports.GetPostComments= async(req,res,next)=>{
                     "perPage": postPerPage,
                     "next": currentPage === totalPages ? currentPage : currentPage + 1
                 },
-                data: post_comments
+                data: comment_data
             }
             return response.sendSuccess({ res, message: "Posts Comments  found", body: responseContent });
         }
