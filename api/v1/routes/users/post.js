@@ -23,7 +23,7 @@ router.get("/comment/replies/:post_id/:comment_id",verifyUser,PostController.Get
 router.get("/user-post/:user_id",verifyUser,verifyNonBlockUser,PostController.GetAUserPost)
 router.get("/:post_id",verifyUser,PostController.GetSinglePost);
 router.delete("/:post_id",verifyUser,PostController.deleteUserPost)
-router.delete("/:post_comment_id",verifyUser,PostController.deleteUserPostComment)
+router.delete("/comment/:post_comment_id",verifyUser,PostController.deleteUserPostComment)
 
 module.exports = router;
 

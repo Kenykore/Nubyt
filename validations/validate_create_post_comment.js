@@ -5,7 +5,8 @@ const ValidatePostComment = (params) => {
         user_id:Joi.string().required(),
         post_id:Joi.string().required(),
         comment_type:Joi.string().required(),
-        description:Joi.string().required(),comment_id:Joi.when(' comment_type', {
+        description:Joi.string().required(),
+        comment_id:Joi.when(' comment_type', {
             is: 'reply',
             then: Joi.string().required(),
             otherwise: Joi.string().optional()

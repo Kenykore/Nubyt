@@ -187,8 +187,8 @@ exports.CreatePost= async(req,res,next)=>{
                 res,
                 message: error.details[0].message
             });
-    let media=cloudinary.url(req.body.media_id,{secure:true,transformation:[...body.filters,{effect:"progressbar:bar:yellow:30"}]})
-    let poster_image=cloudinary.image(req.body.media_id,{secure:true})
+    let media=cloudinary.url(req.body.media_id,{secure:true,transformation:body.filters,resource_type:"video"})
+    let poster_image=cloudinary.image(`${req.body.media_id}.jpg`,{secure:true,resource_type:"video"})
     let myRegex =  /<img[^>]+src='?([^"\s]+)'?\s*\/>/g;
     let image=myRegex.exec(poster_image)
     let post_created= await Post.create({
@@ -218,9 +218,11 @@ exports.ReportPost=async(req,res,next)=>{
            $inc:{
             flagged_count :1
            }
-       }) 
+       },{new:true}).lean() 
        if(post_flagged){
-        return response.sendSuccess({ res, message: "Posts reported successfully", body: post_unliked });
+           let user=await User.findById(post_flagged.user_id).lean()
+           let comment_count=await PostComment.countDocuments({post_id:post_flagged._id}) || 0
+        return response.sendSuccess({ res, message: "Posts reported successfully", body: {...post_unliked,user:user,comment_count:comment_count} });
        }
        return response.sendError({ res, message: "Unabled to report Post" });
 
@@ -239,7 +241,8 @@ exports.viewPost=async(req,res,next)=>{
        },{new:true,upsert:true}).lean() 
        if(post_viewed){
         let user=await User.findById(post_viewed.user_id).lean()
-        return response.sendSuccess({ res, message: "Posts viewed successfully", body: {...post_viewed,user:user} });
+        let comment_count=await PostComment.countDocuments({post_id:post_viewed._id})
+        return response.sendSuccess({ res, message: "Posts viewed successfully", body: {...post_viewed,user:user,comment_count:comment_count} });
        }
        return response.sendError({ res, message: "Unabled to report viewing Post" });
 
@@ -336,7 +339,7 @@ exports.GetPostComments= async(req,res,next)=>{
         let user = req.user_details
         const postPerPage = parseInt(req.query.limit) || 10;
         let currentPage = parseInt(req.query.page) || 0;
-        const skip = currentPage * usersPerPage;
+        const skip = currentPage * postPerPage;
         const totalposts = await PostComment.find({
            post_id:req.params.post_id
         }).countDocuments();
@@ -350,7 +353,7 @@ exports.GetPostComments= async(req,res,next)=>{
                 "pagination": {
                     "current": currentPage,
                     "number_of_pages": totalPages,
-                    "perPage": usersPerPage,
+                    "perPage": postPerPage,
                     "next": currentPage === totalPages ? currentPage : currentPage + 1
                 },
                 data: post_comments
@@ -368,7 +371,7 @@ exports.GetPostCommentsReplies=async(req,res,next)=>{
         let user = req.user_details
         const postPerPage = parseInt(req.query.limit) || 10;
         let currentPage = parseInt(req.query.page) || 0;
-        const skip = currentPage * usersPerPage;
+        const skip = currentPage * postPerPage;
         const totalposts = await PostComment.find({
            post_id:req.params.post_id,
            comment_id:req.params.comment_id,
@@ -386,7 +389,7 @@ exports.GetPostCommentsReplies=async(req,res,next)=>{
                 "pagination": {
                     "current": currentPage,
                     "number_of_pages": totalPages,
-                    "perPage": usersPerPage,
+                    "perPage": postPerPage,
                     "next": currentPage === totalPages ? currentPage : currentPage + 1
                 },
                 data: post_comments
@@ -459,6 +462,7 @@ exports.GetUsersFollowingPost=  async(req,res,next)=>{
             following.push(f.user_id)
           
         }
+        following.push(user.user_id)
         console.log(following,"following users")
         const totalposts = await Post.find({
             flagged_count:{ $lt: 20 },
@@ -472,7 +476,8 @@ exports.GetUsersFollowingPost=  async(req,res,next)=>{
         let post_data=[]
         for(let p of posts){
             let user=await User.findById(p.user_id).lean()
-            post_data.push({...p,user:user})
+            let comment_count=await PostComment.countDocuments({post_id:p._id}) || 0
+            post_data.push({...p,user:user,comment_count:comment_count})
         }
         if(post_data && post_data.length){
             const responseContent = {
@@ -509,7 +514,8 @@ exports.GetRelatedUsersPost=async(req,res,next)=>{
         let post_data=[]
         for(let p of posts){
             let user_data=await User.findById(p.user_id).lean()
-            post_data.push({...p,user:user_data})
+            let comment_count=await PostComment.countDocuments({post_id:p._id}) || 0
+            post_data.push({...p,user:user_data,comment_count:comment_count})
         }
         const totalPages = Math.ceil(totalposts / postPerPage);
         if(post_data && post_data.length){
@@ -539,10 +545,11 @@ exports.GetSinglePost=async (req,res,next)=>{
         const post = await Post.findOne({_id:ObjectID(req.params.post_id), flagged_count:{ $lt: 20 }}).lean()
         if(post){
             let user=await User.findById(post.user_id).lean()
+            let comment_count=await PostComment.count(post._id)
             return response.sendSuccess({
                 res,
                 message: "User record found",
-                body: { data: {...post,user:user} }
+                body: { data: {...post,user:user,comment_count:comment_count} }
             });  
         }
         return response.sendError({
@@ -557,7 +564,7 @@ exports.GetSinglePost=async (req,res,next)=>{
 }
 exports.LikePost=async(req,res,next)=>{
     try {
-       let post_id= req.params.post_id
+       let post_id= req.body.post_id
        let user= req.user_details
        let post_liked= await Post.findByIdAndUpdate(post_id,{
            $push:{
@@ -570,10 +577,11 @@ exports.LikePost=async(req,res,next)=>{
            $inc:{
                likes:1
            }
-       }).lean() 
+       },{new:true,upsert:true}).lean() 
        if(post_liked){
         let user=await User.findById(post_liked.user_id).lean()
-        return response.sendSuccess({ res, message: "Posts liked", body: {...post_liked,user:user} });
+        let comment_count=await PostComment.countDocuments({post_id:post_liked._id})
+        return response.sendSuccess({ res, message: "Posts liked", body: {...post_liked,user:user,comment_count:comment_count} });
        }
        return response.sendError({ res, message: "Unabled to like Post" });
 
@@ -584,7 +592,7 @@ exports.LikePost=async(req,res,next)=>{
 }
 exports.UnLikePost=async(req,res,next)=>{
     try {
-       let post_id= req.params.post_id
+       let post_id= req.body.post_id
        let user= req.user_details
        let post_unliked= await Post.findByIdAndUpdate(post_id,{
            $pull:{
@@ -595,10 +603,11 @@ exports.UnLikePost=async(req,res,next)=>{
            $inc:{
                likes:-1
            }
-       }).lean() 
+       },{new:true,upsert:true}).lean() 
        if(post_unliked){
         let user=await User.findById(post_unliked.user_id).lean()
-        return response.sendSuccess({ res, message: "Posts unliked", body: {...post_unliked,user:user} });
+        let comment_count=await PostComment.countDocuments({post_id:post_unliked._id})
+        return response.sendSuccess({ res, message: "Posts unliked", body: {...post_unliked,user:user,comment_count:comment_count} });
        }
        return response.sendError({ res, message: "Unabled to unlike Post" });
 
