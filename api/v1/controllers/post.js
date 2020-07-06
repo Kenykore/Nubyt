@@ -347,6 +347,11 @@ exports.GetPostComments= async(req,res,next)=>{
             post_id:req.params.post_id
         }).sort({ _id: "desc" }).skip(skip).limit(postPerPage);
         const totalPages = Math.ceil(totalposts / postPerPage);
+        let comment_data=[]
+        for(let c of post_comments){
+            let user=await User.findById(c.user_id).lean()
+            comment_data.push({...c,user:user})
+        }
         if(post_comments && post_comments.length){
             const responseContent = {
                 "total_posts": totalposts,
