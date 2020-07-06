@@ -274,6 +274,25 @@ exports.updateUserDiscountCode = function (req, res, next) {
 
     });
 }
+exports.getIsUserFollowing=async(req,res,next)=>{
+    try {
+        //do check for blocked list
+        let user_id=req.body.user_id
+        let follower_details = req.user_details
+        let user_followed= await UserFollowers.findOne({
+            user_id:user_id,
+            follower_id:follower_details.user_id
+        })
+        if(user_followed){
+            return response.sendSuccess({ res, message: "Users followed  Sucessfully", body:{...user_followed,exist:true} });
+        }
+        return response.sendError({ res, message: "Couldnt follow user" });
+        
+    } catch (error) {
+        console.log(error);
+        next(error)
+    }
+}
 exports.followerUser= async(req,res,next)=>{
     try {
         //do check for blocked list
@@ -296,9 +315,9 @@ exports.followerUser= async(req,res,next)=>{
 }
 exports.UnfollowerUser= async(req,res,next)=>{
     try {
-        let id=req.body.following_id
+        let id=req.body.user_id
         let follower_details = req.user_details
-        let user_unfollowed= await UserFollowers.findByIdAndDelete(id)
+        let user_unfollowed= await UserFollowers.findOneAndDelete({user_id:id,follower_id:follower_details.user_id})
         if(user_unfollowed){
             return response.sendSuccess({ res, message: "Users Unfollowed  Sucessfully", body:{...user_followed} });
         }
