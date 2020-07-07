@@ -197,7 +197,8 @@ exports.CreatePost = async (req, res, next) => {
         let image = myRegex.exec(poster_image)
         let post_created = await Post.create({
             ...req.body,
-            media_id: media,
+            media: media,
+            user_id:user.user_id,
             poster_image: `${image[1].slice(0, image[1].length - 1)}`,
         })
         if (post_created) {
