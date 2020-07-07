@@ -191,7 +191,7 @@ exports.CreatePost = async (req, res, next) => {
                 res,
                 message: error.details[0].message
             });
-        let media = cloudinary.url(req.body.media_id, { secure: true, transformation: body.filters, resource_type: "video" })
+        let media = cloudinary.url(req.body.media_id, { secure: true, transformation: req.body.filters, resource_type: "video" })
         let poster_image = cloudinary.image(`${req.body.media_id}.jpg`, { secure: true, resource_type: "video" })
         let myRegex = /<img[^>]+src='?([^"\s]+)'?\s*\/>/g;
         let image = myRegex.exec(poster_image)
