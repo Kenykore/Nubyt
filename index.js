@@ -35,32 +35,33 @@ db.once('open',(()=>{
 }))
 var http = require('http').createServer(app);
 var io = require('socket.io')(http);
-exports.Socket= io
 io.on('connection', (socket) => {
     console.log('a user connected');
     let token = socket.handshake.query.token;
     let user_id=socket.handshake.query.user_id
     console.log("token",token,"user id",user_id)
+    console.log(socket.id,"socket id")
+    const dynamicNsp = io.of(`/live/${user_id}`).on('connect', (socket) => {
+         console.log("connect to live stream",socket.id)
+    })
     // let user_space= SocketClientService.emitEvent(user_id)
     //user_space.emitEvent(io,user_id)
-    const dynamicNsp = io.of(`/${user_id}`).on('connect', (socket) => {
-        console.log("connect to private")
-        const newNamespace = socket.nsp; 
-        //newNamespace.emit('hello')
-        socket.on("upload_file",(data)=>{
-          console.log("upload file event")
-          SocketClientService.listenToUploadEvent(user_id,data)
-      })  
+    // const dynamicNsp = io.of(`/${user_id}`).on('connect', (socket) => {
+    //     console.log("connect to private")
+    //     const newNamespace = socket.nsp; 
+    //     //newNamespace.emit('hello')
+    //     socket.on("upload_file",(data)=>{
+    //       console.log("upload file event")
+    //       SocketClientService.listenToUploadEvent(user_id,data)
+    //   })  
+    socket.on('disconnect', () => {
+      console.log('user disconnected');
+    });
       });
+
     //   setTimeout(()=>{
     //     dynamicNsp.emit("hello",{second:true})
     //   },2000)
-     
-    socket.on('disconnect', () => {
-        console.log('user disconnected');
-        dynamicNsp.removeAllListeners("upload_file")
-      });
-  });
 
 http.listen(PORT,(()=>{
     console.log('new server working',PORT)
@@ -69,3 +70,4 @@ http.listen(PORT,(()=>{
     console.log(`${config.node_environment} server started, listening on port ${PORT}`);
    // socketemitters()
   }));
+exports.Socket= io

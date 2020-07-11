@@ -1,10 +1,10 @@
 
 const io = require("../index")
 const { uploadViaSocket } = require("../api/v1/controllers/post")
- exports.emitEvent= (event,user_id,data)=> {
+ exports.emitEvent= (namespace)=> {
         try {
-            const dynamicNsp = io.Socket.of(`/${user_id}`)
-            dynamicNsp.emit(event,data)
+            const dynamicNsp = io.Socket.of(namespace)
+            return dynamicNsp
         } catch (error) {
             console.log(error)
         }

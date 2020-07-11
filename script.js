@@ -1,4 +1,5 @@
 const mongoose = require("mongoose")
+const mongodb=require("mongodb")
 const bcrypt = require("bcryptjs");
 const lodash = require('lodash')
 const cloudinary = require('cloudinary').v2;
@@ -118,6 +119,15 @@ async function connectDB(params) {
         console.log(error)
     }
 }
+async function connectDBMongo(params) {
+    try {
+        let connc = await mongodb.connect("mongodb+srv://kenykore:boluwatife@cluster0-5qrlk.mongodb.net/development?retryWrites=true&w=majority")
+
+        return connc
+    } catch (error) {
+        console.log(error)
+    }
+}
 async function createPost() {
     try {
         console.log("connecting to db")
@@ -227,8 +237,45 @@ async function createPost() {
         console.log(error)
     }
 }
-createPost().then((res)=>{
-    console.log(res)
-}).catch(error=>{
-    console.log(error)
+async function getPostBytags(){
+    try {
+        console.log("connecting to db")
+        let connection = await connectDBMongo()
+        let postDB =connection.db().collection("posts")
+      //  console.log(await postDB.find().toArray(),"total")
+     
+        let post_found= await postDB.aggregate([
+            {
+                $sort: { "createdAt": -1 }    
+            },
+            {
+                $match:{flagged_count: { $lt: 20 },visibility:"public", user_id:{$nin:[]}}
+            },
+            {
+                $unwind: { path: "$tags" }
+              },
+              {
+                $group : { _id : "$tags", data: { $push: "$$ROOT" }, count: { $sum: 1 }, },
+              },  
+              {
+                $sort: { "count": -1 }
+              },
+              {
+                $limit:5
+              },
+        ]).toArray()
+     
+        return post_found
+      
+    } catch (error) {
+        console.log(error)
+    }
+}
+getPostBytags().then(res=>{
+    console.log("post found",res)
 })
+// createPost().then((res)=>{
+//     console.log(res)
+// }).catch(error=>{
+//     console.log(error)
+// })

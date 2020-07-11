@@ -1,6 +1,7 @@
 var User = require('../../../models/users');
 var UserFollowers = require("../../../models/followers")
 var Post = require("../../../models/post")
+var LivePost=require("../../../models/live_post")
 var Upload = require("../../../models/uploads")
 var PostComment = require("../../../models/post_comments")
 var ObjectID = require('mongoose').Types.ObjectId;
@@ -11,6 +12,8 @@ var moment = require('moment')
 const config = require("../../../config/index")
 const request = require('request-promise')
 const validatePostCreation = require("../../../validations/validate_create_post")
+const validateLivePostCreation = require("../../../validations/validate_create_live")
+
 const validatePostCommentCreation = require("../../../validations/validate_create_post_comment")
 const cloudinary = require('cloudinary').v2;
 const socket = require("../../../services/Socket")
@@ -206,6 +209,180 @@ exports.CreatePost = async (req, res, next) => {
             res,
             message: "Unable to create Post"
         });
+    } catch (error) {
+        console.log(error)
+        next(error)
+    }
+}
+exports.CreateLivePost = async (req, res, next) => {
+    try {
+        let user = req.user_details
+        const { error } = validateLivePostCreation({ ...req.body, user_id: user.user_id });
+        if (error)
+            return response.sendError({
+                res,
+                message: error.details[0].message
+            });
+        let poster_image = cloudinary.image(`${req.body.media_id}.jpg`, { secure: true, resource_type: "video" })
+        let myRegex = /<img[^>]+src='?([^"\s]+)'?\s*\/>/g;
+        let image = myRegex.exec(poster_image)
+        //create socket id for chatroom
+        let post_created = await Post.create({
+            ...req.body,
+            user_id:user.user_id,
+            start_time:new Date(Date.now()),
+            poster_image: `${image[1].slice(0, image[1].length - 1)}`,
+        })
+        //send notification to user followers
+        if (post_created) {
+            return response.sendSuccess({ res, message: "Live Post Created Successfully", body: { post: post_created } });
+        }
+        return response.sendError({
+            res,
+            message: "Unable to create Live Post"
+        });
+    } catch (error) {
+        console.log(error)
+        next(error)
+    }
+}
+exports.endLivePost=async (req, res, next) => {
+    try {
+        let user = req.user_details
+        let post_id=req.body.post_id
+        let post_ended = await Post.findByIdAndUpdate(post_id,{
+            ended:true,
+            end_time:new Date(Date.now())
+        },{new:true,})
+        if (post_ended) {
+            let namespace= socket.emitEvent(`/live/${post_joined.user_id}`)
+            namespace.emit("live_ended",true)
+            return response.sendSuccess({ res, message: "Live Post Ended Successfully", body: { post: post_ended } });
+        }
+        return response.sendError({
+            res,
+            message: "Unable to end Live Post"
+        });
+    } catch (error) {
+        console.log(error)
+        next(error)
+    }
+}
+exports.JoinLivePost = async (req, res, next) => {
+    try {
+        let post_id = req.body.post_id
+        let user = req.user_details
+        let post_joined = await LivePost.findByIdAndUpdate(post_id, {
+            $push: {
+                watching: {
+                    user_id: user.user_id,
+                    image:user.profilePic || null,
+                    username: user.username,
+                    time: new Date(Date.now())
+                }
+            },
+            $inc: {
+                views: 1
+            }
+        }, { new: true, upsert: true }).lean()       
+        if (post_joined) {
+            let namespace= socket.emitEvent(`/live/${post_joined.user_id}`)
+            namespace.emit("user_joined",user)
+            let user_posting = await User.findById(post_joined.user_id).lean()
+            return response.sendSuccess({ res, message: "Live Joined", body: { ...post_joined, user: user_posting} });
+        }
+        return response.sendError({ res, message: "Unabled to join post" });
+
+    } catch (error) {
+        console.log(error)
+        next(error)
+    }
+}
+exports.LeaveLivePost=async (req, res, next) => {
+    try {
+        let post_id = req.body.post_id
+        let user = req.user_details
+        let post_leave = await LivePost.findByIdAndUpdate(post_id, {
+            $pull: {
+                watching: {
+                    user_id: user.user_id,
+                }
+            },
+            $inc: {
+                likes: -1
+            }
+        }, { new: true, upsert: true }).lean()
+        if (post_leave) {
+            let namespace= socket.emitEvent(`/live/${post_joined.user_id}`)
+            namespace.emit("user_left",user)
+            let user_posting = await User.findById(post_leave.user_id).lean()
+            return response.sendSuccess({ res, message: "Live Posts left", body: { ...post_unliked, user: user_posting } });
+        }
+        return response.sendError({ res, message: "Unabled to leave live post" });
+
+    } catch (error) {
+        console.log(error)
+        next(error)
+    }
+}
+exports.GetLivePosts = async (req, res, next) => {
+    try {
+        let user = req.user_details
+        const postPerPage = parseInt(req.query.limit) || 10;
+        let currentPage = parseInt(req.query.page) || 0;
+        const skip = currentPage * postPerPage;
+        console.log(user, "user")
+        let user_following = await UserFollowers.find({ follower_id: user.user_id }).lean()
+        console.log(user_following, "user following")
+        if (!user_following) {
+            return response.sendError({ res, message: "No Post found", statusCode: status.NOT_FOUND });
+        }
+        let following = []
+        for (let f of user_following) {
+            let user_data = await User.findById(f.user_id).lean()
+            console.log(user_data, "user")
+            if (user_data.blacklist && user_data.blacklist.length > 0) {
+                let user_blocked = user_data.blacklist.find(x => x === user.user_id)
+                if (!user_blocked) {
+                    following.push(f.user_id)
+                }
+                continue
+            }
+            following.push(f.user_id)
+
+        }
+        following.push(user.user_id)
+        console.log(following, "following users")
+        const totalposts = await LivePost.find({
+            flagged_count: { $lt: 20 },
+            ended:false,
+             $and: [{user_id:{$in: following }},{user_id:{$nin:user.blacklist}}]
+        }).countDocuments();
+        const posts = await LivePost.find({
+            flagged_count: { $lt: 20 },
+            ended:false,
+            $and: [{user_id:{$in: following }},{user_id:{$nin:user.blacklist}}]
+        }).sort({ _id: "desc" }).skip(skip).limit(postPerPage).lean();
+        const totalPages = Math.ceil(totalposts / postPerPage);
+        let post_data = []
+        for (let p of posts) {
+            let user = await User.findById(p.user_id).lean()
+            post_data.push({ ...p, user: user, })
+        }
+        if (post_data && post_data.length) {
+            const responseContent = {
+                "total_posts": totalposts,
+                "pagination": {
+                    "current": currentPage,
+                    "number_of_pages": totalPages,
+                    "perPage": postPerPage,
+                    "next": currentPage === totalPages ? currentPage : currentPage + 1
+                },
+                data: post_data
+            }
+            return response.sendSuccess({ res, message: "Live Posts  found", body: responseContent });
+        }
+        return response.sendError({ res, message: "No Live Post found", statusCode: status.NOT_FOUND });
     } catch (error) {
         console.log(error)
         next(error)
@@ -462,7 +639,7 @@ exports.GetUsersFollowingPost = async (req, res, next) => {
             let user_data = await User.findById(f.user_id).lean()
             console.log(user_data, "user")
             if (user_data.blacklist && user_data.blacklist.length > 0) {
-                let user_blocked = user_data.blacklist.find(x => x === user.user_id) || {}
+                let user_blocked = user_data.blacklist.find(x => x === user.user_id)
                 if (!user_blocked) {
                     following.push(f.user_id)
                 }
@@ -475,11 +652,11 @@ exports.GetUsersFollowingPost = async (req, res, next) => {
         console.log(following, "following users")
         const totalposts = await Post.find({
             flagged_count: { $lt: 20 },
-            user_id: { $in: following }
+             $and: [{user_id:{$in: following }},{user_id:{$nin:user.blacklist}}]
         }).countDocuments();
         const posts = await Post.find({
             flagged_count: { $lt: 20 },
-            user_id: { $in: following }
+            $and: [{user_id:{$in: following }},{user_id:{$nin:user.blacklist}}]
         }).sort({ _id: "desc" }).skip(skip).limit(postPerPage).lean();
         const totalPages = Math.ceil(totalposts / postPerPage);
         let post_data = []
@@ -507,6 +684,106 @@ exports.GetUsersFollowingPost = async (req, res, next) => {
         next(error)
     }
 }
+exports.GetTrendingTagPost = async (req, res, next) => {
+    try {
+        let user = req.user_details
+     let post_found= await Post.aggregate([
+            {
+                $sort: { "createdAt": -1 }    
+            },
+            {
+                $match:{flagged_count: { $lt: 20 },visibility:"public",user_id:{$nin:user.blacklist}}
+            },
+            {
+                $unwind: { path: "$tags" }
+              },
+              {
+                $group : { _id : "$tags", data: { $push: "$$ROOT" }, count: { $sum: 1 }, },
+              },  
+              {
+                $sort: { "count": -1 }
+              },
+              {
+                $limit:5
+              },
+        ])
+        if (post_found && post_found.length) {
+            return response.sendSuccess({
+                res,
+                message: "Post Tags found",
+                body: { data: post_found }
+            });
+        }
+        return response.sendError({
+            res,
+            message: "Post trending tags not found",
+            statusCode: status.NOT_FOUND
+        });
+    } catch (error) {
+        console.log(error)
+        next(error)
+    }
+}
+exports.GetPostByTag = async (req, res, next) => {
+    try {
+        let user = req.user_details
+        let tag= req.params.tag
+        const postPerPage = parseInt(req.query.limit) || 10;
+        let currentPage = parseInt(req.query.page) || 0;
+        const skip = currentPage * postPerPage;
+
+        const totalposts = await Post.find({
+            flagged_count: { $lt: 20 },visibility:"public",user_id:{$nin:user.blacklist},tags:{$in:[tag]}
+        }).countDocuments();
+        const posts = await Post.find({
+            flagged_count: { $lt: 20 },visibility:"public",user_id:{$nin:user.blacklist},tags:{$in:[tag]}
+        }).sort({ _id: "desc" }).skip(skip).limit(postPerPage).lean();
+        let post_data = []
+        for (let p of posts) {
+            let user_following = await UserFollowers.find({ user_id: p.user_id }).lean()
+            console.log(user_following, "user following")
+            let user_data = await User.findById(p.user_id).lean()
+            console.log(user_data, "user")
+            if (user_data.blacklist && user_data.blacklist.length > 0) {
+                let user_blocked = user_data.blacklist.find(x => x === user.user_id)
+                if (!user_blocked) {
+                    let comment_count = await PostComment.countDocuments({ post_id: p._id }) || 0
+                    post_data.push({
+                        ...p, user: user_data,
+                        followers: user_following,
+                        comment_count: comment_count
+                    })
+                    continue
+                }
+                continue
+            }
+            let comment_count = await PostComment.countDocuments({ post_id: p._id }) || 0
+            post_data.push({
+                ...p, user: user_data,
+                followers: user_following,
+                comment_count: comment_count
+            })
+        }
+        const totalPages = Math.ceil(totalposts / postPerPage);
+        if (post_data && post_data.length) {
+            const responseContent = {
+                "total_posts": totalposts,
+                "pagination": {
+                    "current": currentPage,
+                    "number_of_pages": totalPages,
+                    "perPage": postPerPage,
+                    "next": currentPage === totalPages ? currentPage : currentPage + 1
+                },
+                data: post_data
+            }
+            return response.sendSuccess({ res, message: "Posts  found", body: responseContent });
+        }
+        return response.sendError({ res, message: "No Post found", statusCode: status.NOT_FOUND });
+    } catch (error) {
+        console.log(error)
+        next(error)
+    }
+}
 exports.GetRelatedUsersPost = async (req, res, next) => {
     try {
         let user = req.user_details
@@ -515,16 +792,30 @@ exports.GetRelatedUsersPost = async (req, res, next) => {
         const skip = currentPage * postPerPage;
 
         const totalposts = await Post.find({
-            flagged_count: { $lt: 20 },
+            flagged_count: { $lt: 20 },visibility:"public",user_id:{$nin:user.blacklist}
         }).countDocuments();
         const posts = await Post.find({
-            flagged_count: { $lt: 20 },
+            flagged_count: { $lt: 20 },visibility:"public",user_id:{$nin:user.blacklist}
         }).sort({ _id: "desc" }).skip(skip).limit(postPerPage).lean();
         let post_data = []
         for (let p of posts) {
             let user_following = await UserFollowers.find({ user_id: p.user_id }).lean()
             console.log(user_following, "user following")
             let user_data = await User.findById(p.user_id).lean()
+            console.log(user_data, "user")
+            if (user_data.blacklist && user_data.blacklist.length > 0) {
+                let user_blocked = user_data.blacklist.find(x => x === user.user_id)
+                if (!user_blocked) {
+                    let comment_count = await PostComment.countDocuments({ post_id: p._id }) || 0
+                    post_data.push({
+                        ...p, user: user_data,
+                        followers: user_following,
+                        comment_count: comment_count
+                    })
+                    continue
+                }
+                continue
+            }
             let comment_count = await PostComment.countDocuments({ post_id: p._id }) || 0
             post_data.push({
                 ...p, user: user_data,
@@ -554,10 +845,24 @@ exports.GetRelatedUsersPost = async (req, res, next) => {
 }
 exports.GetSinglePost = async (req, res, next) => {
     try {
+        let user = req.user_details
         if (!req.params.post_id) {
             return response.sendError({ res, message: "No post id found" });
         }
-        const post = await Post.findOne({ _id: ObjectID(req.params.post_id), flagged_count: { $lt: 20 } }).lean()
+
+        const post = await Post.findOne({ _id: ObjectID(req.params.post_id), flagged_count: { $lt: 20 }}).lean()
+        let user_data = await User.findById(post.user_id).lean()
+        console.log(user_data, "user")
+        if (user_data.blacklist && user_data.blacklist.length > 0) {
+            let user_blocked = user_data.blacklist.find(x => x === user.user_id)
+            if (user_blocked) {
+                return response.sendError({
+                    res,
+                    message: "Not allowed to view this Post",
+                    statusCode: status.FORBIDDEN
+                });
+            }
+        }
         if (post) {
             let user = await User.findById(post.user_id).lean()
             let comment_count = await PostComment.count(post._id)
