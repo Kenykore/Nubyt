@@ -1,6 +1,7 @@
 var User = require('../../../models/users');
 var Post= require("../../../models/post")
 var UserFollowers = require('../../../models/followers');
+var LivePost=require("../../../models/live_post")
 var ObjectID = require('mongoose').Types.ObjectId;
 //var socket= require('../../../socket/usersocket')
 const { randomNumber, formatPhoneNumber, addLeadingZeros, getUserDetails, getTimeWindow, getNextScheduleDate, getNextSchedulePayment } = require("../../../utilities/utils");
@@ -278,15 +279,18 @@ exports.getIsUserFollowing=async(req,res,next)=>{
     try {
         //do check for blocked list
         let user_id=req.body.user_id
+        console.log(user_id,"user id")
         let follower_details = req.user_details
+        console.log(follower_details.user_id,"follower id")
         let user_followed= await UserFollowers.findOne({
             user_id:user_id,
             follower_id:follower_details.user_id
-        })
+        }).lean()
+        console.log(user_followed)
         if(user_followed){
             return response.sendSuccess({ res, message: "Users followed  Sucessfully", body:{...user_followed,exist:true} });
         }
-        return response.sendError({ res, message: "Couldnt follow user" });
+        return response.sendSuccess({ res, message: "Not following user",body:{exist:false} });
         
     } catch (error) {
         console.log(error);
@@ -303,6 +307,9 @@ exports.followerUser= async(req,res,next)=>{
             user_id:user_id,
             follower_id:follower_details.user_id
         })
+        // await User.findByIdAndUpdate(user_followed.user_id,{
+        //     $inc:{followers:1}
+        // })
         if(user_followed){
             return response.sendSuccess({ res, message: "Users followed  Sucessfully", body:{...user_followed} });
         }
@@ -317,9 +324,9 @@ exports.UnfollowerUser= async(req,res,next)=>{
     try {
         let id=req.body.user_id
         let follower_details = req.user_details
-        let user_unfollowed= await UserFollowers.findOneAndDelete({user_id:id,follower_id:follower_details.user_id})
+        let user_unfollowed= await UserFollowers.findOneAndDelete({user_id:id,follower_id:follower_details.user_id}).lean()
         if(user_unfollowed){
-            return response.sendSuccess({ res, message: "Users Unfollowed  Sucessfully", body:{...user_followed} });
+            return response.sendSuccess({ res, message: "Users Unfollowed  Sucessfully", body:{...user_unfollowed} });
         }
         return response.sendError({ res, message: "Couldnt Unfollow user" });
         
@@ -611,21 +618,25 @@ exports.getSingleUser = async function (req, res, next) {
         if (user) {
             let user_followers_count=await UserFollowers.countDocuments({user_id:user._id})
             let user_following_count=await UserFollowers.countDocuments({follower_id:user._id})
+            let user_live_count=await LivePost.countDocuments({user_id:user._id,ended:false})
             let user_likes=0
             let user_posts= await Post.find({user_id:user._id}).lean()
             if(user_posts){
                 user_likes= user_posts.reduce((previous,next)=>{
-                    console.log(next,"next")
-                    return Number(previous+next.likes)
+                    let like=next.likes || 0
+                    return Number(previous+like)
                 },0)
             }
+            console.log(user_likes,"user likes")
             let user_found={
                 ...user,
                 followers:user_followers_count,
                 following:user_following_count,
-                likes:user_likes
+                likes:user_likes,
+                live:true
+                //live:user_live_count>0?true:false
             }
-            socket.emitEvent("hello",user._id,{user:user})
+            //socket.emitEvent("hello",user._id,{user:user})
             return response.sendSuccess({
                 res,
                 message: "User record found",

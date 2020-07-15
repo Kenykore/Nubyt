@@ -4,7 +4,6 @@ var postModel= new mongoose.Schema({
         type:String,
         required:true
     },
-    time:Date,
     media_id:{
         type:String,
     },

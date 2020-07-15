@@ -227,7 +227,7 @@ exports.CreateLivePost = async (req, res, next) => {
         let myRegex = /<img[^>]+src='?([^"\s]+)'?\s*\/>/g;
         let image = myRegex.exec(poster_image)
         //create socket id for chatroom
-        let post_created = await Post.create({
+        let post_created = await LivePost.create({
             ...req.body,
             user_id:user.user_id,
             start_time:new Date(Date.now()),
@@ -255,7 +255,7 @@ exports.endLivePost=async (req, res, next) => {
             end_time:new Date(Date.now())
         },{new:true,})
         if (post_ended) {
-            let namespace= socket.emitEvent(`/live/${post_joined.user_id}`)
+            let namespace= socket.emitEvent(`/live/${post_ended.user_id}`)
             namespace.emit("live_ended",true)
             return response.sendSuccess({ res, message: "Live Post Ended Successfully", body: { post: post_ended } });
         }
@@ -320,6 +320,33 @@ exports.LeaveLivePost=async (req, res, next) => {
         }
         return response.sendError({ res, message: "Unabled to leave live post" });
 
+    } catch (error) {
+        console.log(error)
+        next(error)
+    }
+}
+exports.GetUserLivePost=async(req,res,next)=>{
+    try {
+        let user = req.user_details
+        let user_id=req.query.user_id
+        const post = await LivePost.findOne({
+            flagged_count: { $lt: 20 },
+            ended:false,
+            user_id:user_id,
+        }).lean()
+        if (post) {
+            let user = await User.findById(post.user_id).lean()
+            return response.sendSuccess({
+                res,
+                message: "Post record found",
+                body: { data: { ...post, user: user } }
+            });
+        }
+        return response.sendError({
+            res,
+            message: "Post not found",
+            statusCode: status.NOT_FOUND
+        });
     } catch (error) {
         console.log(error)
         next(error)
@@ -692,7 +719,7 @@ exports.GetTrendingTagPost = async (req, res, next) => {
                 $sort: { "createdAt": -1 }    
             },
             {
-                $match:{flagged_count: { $lt: 20 },visibility:"public",user_id:{$nin:user.blacklist}}
+                $match:{flagged_count: { $lt: 20 },visibility:"public",user_id:{$nin:user.blacklist || []}}
             },
             {
                 $unwind: { path: "$tags" }
@@ -733,10 +760,10 @@ exports.GetPostByTag = async (req, res, next) => {
         const skip = currentPage * postPerPage;
 
         const totalposts = await Post.find({
-            flagged_count: { $lt: 20 },visibility:"public",user_id:{$nin:user.blacklist},tags:{$in:[tag]}
+            flagged_count: { $lt: 20 },visibility:"public",user_id:{$nin:user.blacklist || []},tags:{$in:[tag]}
         }).countDocuments();
         const posts = await Post.find({
-            flagged_count: { $lt: 20 },visibility:"public",user_id:{$nin:user.blacklist},tags:{$in:[tag]}
+            flagged_count: { $lt: 20 },visibility:"public",user_id:{$nin:user.blacklist || []},tags:{$in:[tag]}
         }).sort({ _id: "desc" }).skip(skip).limit(postPerPage).lean();
         let post_data = []
         for (let p of posts) {

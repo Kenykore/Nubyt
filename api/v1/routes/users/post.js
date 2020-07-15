@@ -21,6 +21,7 @@ router.post("/like", verifyUser,PostController.LikePost);
 router.post("/unlike", verifyUser,PostController.UnLikePost);
 router.get("/",verifyUser,PostController.GetUsersPost)
 router.get("/live",verifyUser,PostController.GetLivePosts)
+router.get("/live/user",verifyUser,PostController.GetUserLivePost)
 router.get("/following",verifyUser,PostController.GetUsersFollowingPost)
 router.get("/related",verifyUser,PostController.GetRelatedUsersPost)
 router.get("/trending",verifyUser,PostController.GetTrendingTagPost)

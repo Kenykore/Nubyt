@@ -346,7 +346,7 @@ exports.UpdateProfile = async function (req, res, next) {
          
         }
       
-        let user_updated=await  User.findByIdAndUpdate(userDetails._id, update, { new: true }) 
+        let user_updated=await  User.findByIdAndUpdate(userDetails._id, update, { new: true }).lean() 
         if(user_updated){
             delete user_updated.password;
             delete user_updated.resetPasswordExpires
