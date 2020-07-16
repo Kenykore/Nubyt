@@ -633,8 +633,7 @@ exports.getSingleUser = async function (req, res, next) {
                 followers:user_followers_count,
                 following:user_following_count,
                 likes:user_likes,
-                live:true
-                //live:user_live_count>0?true:false
+                live:user_live_count>0?true:false
             }
             //socket.emitEvent("hello",user._id,{user:user})
             return response.sendSuccess({
