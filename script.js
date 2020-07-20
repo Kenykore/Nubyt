@@ -1,5 +1,6 @@
 const mongoose = require("mongoose")
 const mongodb=require("mongodb")
+const ObjectID=mongoose.Types.ObjectId
 const bcrypt = require("bcryptjs");
 const lodash = require('lodash')
 const cloudinary = require('cloudinary').v2;
@@ -109,7 +110,8 @@ let filter_effects = [
     }
 ]
 let tags = ["food", "love", "fun", "enjoyment", "football", "travel", "gender"]
-
+let message_type=["send","received"]
+let message=["hell how are you","Hey there","Test message","Thats wonderful","Interesting topic","Love to hear from you soon"]
 async function connectDB(params) {
     try {
         let connc = await mongoose.createConnection("mongodb+srv://kenykore:boluwatife@cluster0-5qrlk.mongodb.net/development?retryWrites=true&w=majority")
@@ -271,9 +273,75 @@ async function getPostBytags(){
         console.log(error)
     }
 }
-getPostBytags().then(res=>{
-    console.log("post found",res)
+async function createChat(){
+    try {
+        console.log("connecting to db")
+        let connection = await connectDBMongo()
+        let chatDB =connection.db().collection("chats")
+        let userDB =connection.db().collection("users")
+        let chats=[]
+        let all_users= await userDB.find().toArray()
+        for(let u of all_users){
+            let users=all_users
+            let current_user_index= users.findIndex(x=>x._id.toString()===u._id.toString())
+            console.log(current_user_index,"user index")
+            users.splice(current_user_index,1)
+            for(let i=0;i<30;i++){
+                let receiver=lodash.sample(users)
+                let data={
+                    user_id:u._id.toString(),
+                    recipient_id:receiver._id.toString(),
+                    message:lodash.sample(message),
+                    message_type:lodash.sample(message_type),
+                    time:new Date(Date.now())
+                }
+                let chat_created=await chatDB.insertOne(data)
+                chats.push(chat_created.ops)
+            }
+        }
+        return chats
+    } catch (error) {
+        console.log(error)
+    }
+}
+async function getUserChat(){
+    try {
+        let user_id="5f018dc12bdabe177743d96a"
+        console.log("connecting to db")
+        let connection = await connectDBMongo()
+        let chatDB =connection.db().collection("chats")
+        let userDB =connection.db().collection("users")
+        let chat_found=await chatDB.aggregate([
+            {
+                $sort: { "createdAt": -1 }    
+            },
+            {
+                $match:{user_id:user_id}
+            },
+            {
+                $group : { _id : "$recipient_id", data: { $push: "$$ROOT" }, count: { $sum: 1 }, },
+            }, 
+        ]).toArray()
+        let chats=[]
+        for(let c of chat_found){
+            console.log(c,"chat found")
+            let user=await userDB.findOne({_id:ObjectID(c._id)})
+            chats.push({user:user,...c.data[0]})
+        }
+        return chats
+    } catch (error) {
+        console.log(error)
+    }
+}
+getUserChat().then(res=>{
+    console.log(res,"chat")
 })
+// createChat().then(res=>{
+//     console.log("done",res)
+// })
+// getPostBytags().then(res=>{
+//     console.log("post found",res)
+// })
 // createPost().then((res)=>{
 //     console.log(res)
 // }).catch(error=>{

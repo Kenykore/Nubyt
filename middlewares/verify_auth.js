@@ -30,7 +30,7 @@ const Secure = {
     async verifyNonBlockUser(req,res,next){
         try {
             let user_details= req.user_details
-            let user_blocked= await User.findOne({_id:ObjectID(req.body.user_id || req.params.user_id),blocked: { $in: [user_details.user_id]}}).lean()
+            let user_blocked= await User.findOne({_id:ObjectID(req.body.user_id || req.params.user_id || req.body.recipient_id),blocked: { $in: [user_details.user_id]}}).lean()
             if(user_blocked){
                 return response.sendError({ res, message: "Cannot perform this action, user blocked you", statusCode: status.FORBIDDEN });
             }

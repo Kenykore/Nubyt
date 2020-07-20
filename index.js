@@ -44,6 +44,9 @@ io.on('connection', (socket) => {
     const dynamicNsp = io.of(`/live/${user_id}`).on('connect', (socket) => {
          console.log("connect to live stream",socket.id)
     })
+    const chatNsp = io.of(`/chat/${user_id}`).on('connect', (socket) => {
+      console.log("connect to chat stream",socket.id)
+ })
     // let user_space= SocketClientService.emitEvent(user_id)
     //user_space.emitEvent(io,user_id)
     // const dynamicNsp = io.of(`/${user_id}`).on('connect', (socket) => {

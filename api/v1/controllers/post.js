@@ -235,6 +235,8 @@ exports.CreateLivePost = async (req, res, next) => {
         })
         //send notification to user followers
         if (post_created) {
+            let namespace= socket.emitEvent(`/live/${post_created.user_id}`)
+            namespace.emit("live_started",user)
             return response.sendSuccess({ res, message: "Live Post Created Successfully", body: { post: post_created } });
         }
         return response.sendError({
@@ -250,10 +252,12 @@ exports.endLivePost=async (req, res, next) => {
     try {
         let user = req.user_details
         let post_id=req.body.post_id
-        let post_ended = await Post.findByIdAndUpdate(post_id,{
+        console.log(post_id,"post id")
+        let post_ended = await LivePost.findByIdAndUpdate(post_id,{
             ended:true,
             end_time:new Date(Date.now())
         },{new:true,})
+        console.log(post_ended,"post ended")
         if (post_ended) {
             let namespace= socket.emitEvent(`/live/${post_ended.user_id}`)
             namespace.emit("live_ended",true)
@@ -313,10 +317,10 @@ exports.LeaveLivePost=async (req, res, next) => {
             }
         }, { new: true, upsert: true }).lean()
         if (post_leave) {
-            let namespace= socket.emitEvent(`/live/${post_joined.user_id}`)
+            let namespace= socket.emitEvent(`/live/${post_leave.user_id}`)
             namespace.emit("user_left",user)
             let user_posting = await User.findById(post_leave.user_id).lean()
-            return response.sendSuccess({ res, message: "Live Posts left", body: { ...post_unliked, user: user_posting } });
+            return response.sendSuccess({ res, message: "Live Posts left", body: { ...post_leave, user: user_posting } });
         }
         return response.sendError({ res, message: "Unabled to leave live post" });
 
@@ -329,11 +333,13 @@ exports.GetUserLivePost=async(req,res,next)=>{
     try {
         let user = req.user_details
         let user_id=req.query.user_id
+        console.log("working")
         const post = await LivePost.findOne({
             flagged_count: { $lt: 20 },
             ended:false,
             user_id:user_id,
         }).lean()
+        console.log(post,"post")
         if (post) {
             let user = await User.findById(post.user_id).lean()
             return response.sendSuccess({
