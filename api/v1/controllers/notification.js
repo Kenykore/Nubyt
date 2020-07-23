@@ -67,7 +67,7 @@ exports.getNotification= async(req,res,next)=>{
         }).countDocuments();
         const notifications = await Notification.find({
             recipient_id:user.user_id
-        }).sort({ _id:1 }).skip(skip).limit(notifyPerPage).lean();
+        }).sort({ _id:-1 }).skip(skip).limit(notifyPerPage).lean();
         const totalPages = Math.ceil(totalnotify / notifyPerPage);
         let notify_data = []
         for (let c of notifications) {

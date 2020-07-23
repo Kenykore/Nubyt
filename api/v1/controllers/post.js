@@ -509,7 +509,7 @@ exports.CreatePostComment = async (req, res, next) => {
             let data={
                 user_id:req.user_details.user_id,
                 recipient_id:post_found.user_id,
-                post_id:post_found._id.toString(),
+                post_id:post_found._id,
                 message:`${user.username}commented ${post_comment_created.description} on your post ${moment(time).toNow()}`   ,
                 time:time,
                 notification_type:"chat"
@@ -910,7 +910,7 @@ exports.GetSinglePost = async (req, res, next) => {
         }
         if (post) {
             let user = await User.findById(post.user_id).lean()
-            let comment_count = await PostComment.count(post._id)
+            let comment_count = await PostComment.count({post_id:post._id})
             return response.sendSuccess({
                 res,
                 message: "User record found",
