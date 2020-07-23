@@ -1,6 +1,6 @@
 {
-  "name": "Comestibles-API",
-  "description": "API for Comestibles",
+  "name": "Nubyt-API",
+  "description": "API for Nubyt",
   "scripts": {
     "lint": "eslint .",
     "start": "node index.js",

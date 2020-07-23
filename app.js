@@ -72,6 +72,7 @@ const userAuthRouter=require("./api/v1/routes/users/authentication")
 const userUsersRouter=require("./api/v1/routes/users/users")
 const userPostRouter=require("./api/v1/routes/users/post")
 const userChatRouter=require("./api/v1/routes/users/chat")
+const userNotificationRouter=require("./api/v1/routes/users/notification")
 //
 //authentication
 app.use("/auth/admin",adminAuthRouter);
@@ -82,7 +83,7 @@ app.use("/users/admin",adminUserRouter)
 //posts
 app.use("/post/user",userPostRouter)
 app.use("/chat/user",userChatRouter)
-
+app.use("/notify/user",userNotificationRouter)
 //notifications api
 //end of notification api
 app.set('view engine', 'pug');

@@ -311,22 +311,58 @@ async function getUserChat(){
         let connection = await connectDBMongo()
         let chatDB =connection.db().collection("chats")
         let userDB =connection.db().collection("users")
-        let chat_found=await chatDB.aggregate([
-            {
-                $sort: { "createdAt": -1 }    
-            },
-            {
-                $match:{user_id:user_id}
-            },
-            {
-                $group : { _id : "$recipient_id", data: { $push: "$$ROOT" }, count: { $sum: 1 }, },
-            }, 
-        ]).toArray()
+        // let chat_found=await chatDB.aggregate([
+        //     {
+        //         $sort: { "createdAt": 1 }    
+        //     },
+        //     {
+        //         $match:{$or:[{
+        //             user_id:user_id,
+        //         },{
+        //             recipient_id:user_id,
+        //         }]}
+        //     },
+        //     // {
+        //     //     $group : { _id : "$user_id",data: { $push: "$$ROOT" }},
+        //     // }, 
+        //     // {
+        //     //     $unwind: { path: "$data" }
+        //     //   },
+        //     {
+        //         $group : { _id : "$user_id", data: { $push: "$$ROOT" }, count: { $sum: 1 }, },
+        //     }, 
+        // ]).toArray()
+        let chat_found=await chatDB.find({
+            $or:[{
+                 user_id:user_id,
+                        },{
+                  recipient_id:user_id,
+                }]
+        }).toArray()
         let chats=[]
         for(let c of chat_found){
             console.log(c,"chat found")
-            let user=await userDB.findOne({_id:ObjectID(c._id)})
-            chats.push({user:user,...c.data[0]})
+            if(c.recipient_id.toString()!==user_id){
+                let index_found=chats.findIndex(x=>x._id===c.recipient_id)
+                if(index_found>=0){
+                    chats[index_found].data.push(c)
+                }
+                else{
+                    let user=await userDB.findOne({_id:ObjectID(c.recipient_id)})
+                    chats.push({_id:c.recipient_id,user:user,data:[c]})
+                }    
+            }
+            else{
+                let index_found=chats.findIndex(x=>x._id===c.user_id)
+                if(index_found>=0){
+                    chats[index_found].data.push(c)
+                }
+                else{
+                    let user=await userDB.findOne({_id:ObjectID(c.user_id)})
+                    chats.push({_id:c.user_id,user:user,data:[c]})
+                }
+            }
+          
         }
         return chats
     } catch (error) {

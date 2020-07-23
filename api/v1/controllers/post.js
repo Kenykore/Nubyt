@@ -2,6 +2,7 @@ var User = require('../../../models/users');
 var UserFollowers = require("../../../models/followers")
 var Post = require("../../../models/post")
 var LivePost=require("../../../models/live_post")
+var NotificationController=require("./notification");
 var Upload = require("../../../models/uploads")
 var PostComment = require("../../../models/post_comments")
 var ObjectID = require('mongoose').Types.ObjectId;
@@ -466,6 +467,7 @@ exports.viewPost = async (req, res, next) => {
 }
 exports.CreatePostComment = async (req, res, next) => {
     try {
+        let user=req.user_details
         const { error } = validatePostCommentCreation(req.body);
         if (error)
             return response.sendError({
@@ -503,6 +505,16 @@ exports.CreatePostComment = async (req, res, next) => {
             time: new Date(Date.now())
         })
         if (post_comment_created) {
+            let time= new Date(Date.now())
+            let data={
+                user_id:req.user_details.user_id,
+                recipient_id:post_found.user_id,
+                post_id:post_found._id.toString(),
+                message:`${user.username}commented ${post_comment_created.description} on your post ${moment(time).toNow()}`   ,
+                time:time,
+                notification_type:"chat"
+            }
+            NotificationController.saveNotification(data)
             return response.sendSuccess({ res, message: "Post Comment Created Successfully", body: { post: post_comment_created } });
         }
         return response.sendError({
@@ -934,6 +946,16 @@ exports.LikePost = async (req, res, next) => {
         if (post_liked) {
             let user = await User.findById(post_liked.user_id).lean()
             let comment_count = await PostComment.countDocuments({ post_id: post_liked._id })
+            let time=new Date(Date.now())
+            let data={
+                user_id:req.user_details.user_id,
+                recipient_id:post_liked.user_id,
+                post_id:post_liked._id.toString(),
+                message:`${req.user_details.username}liked your post ${moment(time).toNow()}`   ,
+                time:time,
+                notification_type:"like"
+            }
+            NotificationController.saveNotification(data)
             return response.sendSuccess({ res, message: "Posts liked", body: { ...post_liked, user: user, comment_count: comment_count } });
         }
         return response.sendError({ res, message: "Unabled to like Post" });

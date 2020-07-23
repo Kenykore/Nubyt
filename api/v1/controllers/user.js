@@ -17,6 +17,7 @@ const config = require("../../../config/index")
 const request = require('request-promise');
 const { emit } = require('process');
 const socket= require("../../../services/Socket")
+const NotificationController=require("./notification")
 var selfSignedConfig = {
     service: 'gmail',
     auth: {
@@ -311,6 +312,15 @@ exports.followerUser= async(req,res,next)=>{
         //     $inc:{followers:1}
         // })
         if(user_followed){
+            let time= new Date(Date.now())
+            let data={
+                user_id:req.user_details.user_id,
+                recipient_id:req.body.user_id,
+                message:`${follower_details.username}followed you ${moment(time).toNow()}`   ,
+                time:time,
+                notification_type:"follow"
+            }
+            NotificationController.saveNotification(data)
             return response.sendSuccess({ res, message: "Users followed  Sucessfully", body:{...user_followed} });
         }
         return response.sendError({ res, message: "Couldnt follow user" });

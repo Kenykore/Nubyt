@@ -3,6 +3,9 @@ var Chat=require("../../../models/chat")
 const response = require("../../../utilities/response");
 const status = require("http-status");
 const socket = require("../../../services/Socket")
+const lodash=require("lodash")
+const ObjectID=require("mongoose").Types.ObjectId
+
 var firebase_admin = require("firebase-admin");
 const validateChatCreation = require("../../../validations/validate_create_chat")
 exports.CreateChat = async (req, res, next) => {
@@ -23,8 +26,8 @@ exports.CreateChat = async (req, res, next) => {
             let user=await User.findById(chat_created.recipient_id).lean()
             let namespace= socket.emitEvent(`/chat/${chat_created.user_id}`)
             let receipt_namespace=socket.emitEvent(`/chat/${chat_created.recipient_id}`)
-            namespace.emit("new_chat",{...chat_created,user:user})
-            receipt_namespace.emit("new_chat",{...chat_created,user:user})
+            namespace.emit("new_chat",{...chat_created.toObject(),user:user})
+            receipt_namespace.emit("new_chat",{...chat_created.toObject(),user:user})
             return response.sendSuccess({ res, message: "Chat Sent Successfully", body: {chat:{...chat_created,user:user }} });
         }
         return response.sendError({
@@ -39,23 +42,41 @@ exports.CreateChat = async (req, res, next) => {
 exports.GetUserChat = async (req, res, next) => {
     try {
         let user = req.user_details
-     let chat_found= await Chat.aggregate([
-        {
-            $sort: { "createdAt": -1 }    
-        },
-        {
-            $match:{user_id:user.user_id}
-        },
-        {
-            $group : { _id : "$recipient_id", data: { $push: "$$ROOT" }, count: { $sum: 1 }, },
-        }, 
-    ])
+        console.log(user.user_id)
+     let chat_found= await Chat.find({
+        $or:[{
+             user_id:user.user_id,
+                    },{
+              recipient_id:user.user_id,
+            }]
+    }).sort({ _id:1 }).lean()
+    console.log(chat_found,"chat found")
     let chats=[]
     for(let c of chat_found){
         console.log(c,"chat found")
-        let user=await User.findOne({_id:ObjectID(c._id)})
-        chats.push({user:user,...c.data[0]})
-     }
+        if(c.recipient_id.toString()!==user.user_id){
+            let index_found=chats.findIndex(x=>x._id===c.recipient_id)
+            if(index_found>=0){
+                chats[index_found].data=c
+            }
+            else{
+                let user=await User.findOne({_id:ObjectID(c.recipient_id)})
+                chats.push({_id:c.recipient_id,user:user,data:c})
+            }    
+        }
+        else{
+            let index_found=chats.findIndex(x=>x._id===c.user_id)
+            if(index_found>=0){
+                chats[index_found].data=c
+            }
+            else{
+                let user=await User.findOne({_id:ObjectID(c.user_id)})
+                chats.push({_id:c.user_id,user:user,data:c})
+            }
+        }
+      
+    }
+    chats=lodash.orderBy(chats,['data.time'],['desc'])
         if (chats && chats.length) {
             return response.sendSuccess({
                 res,
@@ -94,7 +115,7 @@ exports.GetChatMessage=async(req,res,next)=>{
             }]
           
         }).countDocuments();
-        const chats = await LivePost.find({
+        const chats = await Chat.find({
             $or:[{
                 user_id:user.user_id,
                 recipient_id:recipient_id
@@ -102,12 +123,12 @@ exports.GetChatMessage=async(req,res,next)=>{
                 recipient_id:user.user_id,
                 user_id:recipient_id
             }]
-        }).sort({ _id: "desc" }).skip(skip).limit(chatPerPage).lean();
+        }).sort({ _id:1 }).skip(skip).limit(chatPerPage).lean();
         const totalPages = Math.ceil(totalchats / chatPerPage);
         let chat_data = []
         for (let c of chats) {
             let user = await User.findById(c.recipient_id).lean()
-            post_data.push({ ...p, user: user, })
+            chat_data.push({ ...c, user: user, })
         }
         if (chat_data && chat_data.length) {
             const responseContent = {
