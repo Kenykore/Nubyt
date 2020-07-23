@@ -8,6 +8,7 @@ var Notification = require("../../../models/notifications")
 var User= require("../../../models/users")
 var Post=require("../../../models/post")
 var firebase_admin = require("firebase-admin");
+const request=require('request-promise')
 const socket = require("../../../services/Socket")
 exports.saveNotification= async (data)=>{
     try {
@@ -15,8 +16,38 @@ exports.saveNotification= async (data)=>{
             return
         }
         let notification_saved= await Notification.create(data)
+        console.log(notification_saved,"saved")
        let reciever=socket.emitEvent(`/notify/${data.recipient_id}`)
-       reciever.emit("alert",data)
+       let user_receiving=await User.findById(notification_saved.recipient_id).lean()
+       let user = await User.findById(notification_saved.user_id).lean()
+       let post={}
+       if(notification_saved.post_id){
+           post=await Post.findById(notification_saved.post_id).lean()
+       }
+       reciever.emit("new_alert",{user:user,...notification_saved.toObject(),post:post})
+       if(user_receiving.deviceToken!==undefined && user_receiving.deviceToken.length>0){
+      let msg=await firebase_admin.messaging().sendToDevice(user_receiving.deviceToken,{
+            data:{
+              type:"push"  
+            },
+            android:{
+                "notification": {
+                    "icon":"fcm_push_icon",
+                    "click_action": "FCM_PLUGIN_ACTIVITY"
+                  }
+            },
+            notification:{
+                body:notification_saved.message,
+                
+                title:`New ${notification_saved.notification_type}`,
+                "sound":"default",
+                "icon":"fcm_push_icon",
+        "click_action": "FCM_PLUGIN_ACTIVITY"
+            },
+        
+        },{priority:"high"})
+        console.log(msg,"message")
+       }
        //send firebase notification
         return notification_saved
     } catch (error) {
