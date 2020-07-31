@@ -5,7 +5,7 @@ const status = require("http-status");
 const socket = require("../../../services/Socket")
 const lodash=require("lodash")
 const ObjectID=require("mongoose").Types.ObjectId
-
+var NotificationController=require("./notification");
 var firebase_admin = require("firebase-admin");
 const validateChatCreation = require("../../../validations/validate_create_chat")
 exports.CreateChat = async (req, res, next) => {
@@ -28,6 +28,15 @@ exports.CreateChat = async (req, res, next) => {
             let receipt_namespace=socket.emitEvent(`/chat/${chat_created.recipient_id}`)
             namespace.emit("new_chat",{...chat_created.toObject(),user:user})
             receipt_namespace.emit("new_chat",{...chat_created.toObject(),user:user})
+            let time= new Date(Date.now())
+            let data={
+                user_id:req.user_details.user_id,
+                recipient_id:chat_created.recipient_id,
+                message:chat_created.message,
+                time:time,
+                notification_type:"chat"
+            }
+            NotificationController.saveNotification(data)
             return response.sendSuccess({ res, message: "Chat Sent Successfully", body: {chat:{...chat_created,user:user }} });
         }
         return response.sendError({

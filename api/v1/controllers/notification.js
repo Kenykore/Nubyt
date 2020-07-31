@@ -25,7 +25,7 @@ exports.saveNotification= async (data)=>{
            post=await Post.findById(notification_saved.post_id).lean()
        }
        reciever.emit("new_alert",{user:user,...notification_saved.toObject(),post:post})
-       let msg= await firebase_admin.messaging().sendToTopic(`notify-${user_receiving._id}`,{
+       let msg= await firebase_admin.messaging().sendToTopic(`notify-${user_receiving._id}`,{//
            data:{
                type:"push"
            },
