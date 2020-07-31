@@ -29,12 +29,6 @@ exports.saveNotification= async (data)=>{
            data:{
                type:"push"
            },
-           android:{
-            "notification": {
-                "icon":"fcm_push_icon",
-                "click_action": "FCM_PLUGIN_ACTIVITY"
-              }
-            },
            notification:{
             body:notification_saved.message,
             title:`New ${notification_saved.notification_type}`,
@@ -48,12 +42,6 @@ exports.saveNotification= async (data)=>{
       let msg=await firebase_admin.messaging().sendToDevice(user_receiving.deviceToken,{
             data:{
               type:"push"  
-            },
-            android:{
-                "notification": {
-                    "icon":"fcm_push_icon",
-                    "click_action": "FCM_PLUGIN_ACTIVITY"
-                  }
             },
             notification:{
                 body:notification_saved.message,
