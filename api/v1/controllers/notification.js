@@ -25,6 +25,25 @@ exports.saveNotification= async (data)=>{
            post=await Post.findById(notification_saved.post_id).lean()
        }
        reciever.emit("new_alert",{user:user,...notification_saved.toObject(),post:post})
+       let msg= await firebase_admin.messaging().sendToTopic(`notify/${user_receiving._id}`,{
+           data:{
+               type:"push"
+           },
+           android:{
+            "notification": {
+                "icon":"fcm_push_icon",
+                "click_action": "FCM_PLUGIN_ACTIVITY"
+              }
+            },
+           notification:{
+            body:notification_saved.message,
+            title:`New ${notification_saved.notification_type}`,
+            "sound":"default",
+            "icon":"fcm_push_icon",
+    "click_action": "FCM_PLUGIN_ACTIVITY"
+        },
+           },{priority:"high"})
+           console.log(msg,"message 1 fire")
        if(user_receiving.deviceToken!==undefined && user_receiving.deviceToken.length>0){
       let msg=await firebase_admin.messaging().sendToDevice(user_receiving.deviceToken,{
             data:{
@@ -46,7 +65,7 @@ exports.saveNotification= async (data)=>{
             },
         
         },{priority:"high"})
-        console.log(msg,"message")
+        console.log(msg,"message 2")
        }
        //send firebase notification
         return notification_saved
