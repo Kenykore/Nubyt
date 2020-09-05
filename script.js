@@ -3,6 +3,12 @@ const mongodb=require("mongodb")
 const ObjectID=mongoose.Types.ObjectId
 const bcrypt = require("bcryptjs");
 const lodash = require('lodash')
+const BCHJS = require('@chris.troutner/bch-js')
+const fs = require("fs");
+const { UserBindingContext } = require("twilio/lib/rest/chat/v2/service/user/userBinding");
+
+// Instantiate bch-js based on the network.
+let bchjs=new BCHJS({ restURL:'https://free-main.fullstack.cash/v3/' })
 const cloudinary = require('cloudinary').v2;
 cloudinary.config({ 
     cloud_name: 'nubyt-co', 
@@ -369,9 +375,43 @@ async function getUserChat(){
         console.log(error)
     }
 }
-getUserChat().then(res=>{
-    console.log(res,"chat")
-})
+async function createWallet(){
+    try {
+        let connection = await connectDBMongo()
+        let userDB =connection.db().collection("users")   
+        let allUsers=await userDB.find().toArray()
+    //     let updatedUsers=[]
+    //     for(let u of allUsers){
+    //         let network=await   bchjs.Control.getNetworkInfo()
+    //         console.log(network,"network")
+    //            const outObj = {}
+    //    let mnemonic = bchjs.Mnemonic.generate(128);
+    //    // create seed buffer from mnemonic
+    //    let seedBuffer = await bchjs.Mnemonic.toSeed(mnemonic);
+    //    // create HDNode from seed buffer
+    //    let hdNode = bchjs.HDNode.fromSeed(seedBuffer);
+    //    // to extended public key
+    //    outObj.public_key=bchjs.HDNode.toXPub(hdNode);
+    //    outObj.mnemonic=mnemonic
+    //    outObj.private_key=bchjs.HDNode.toXPriv(hdNode);
+    //    outObj.cashAddress=bchjs.HDNode.toCashAddress(hdNode);
+    //    outObj.wif=bchjs.HDNode.toWIF(hdNode);
+    //    outObj.slpAddress=bchjs.SLP.HDNode.toSLPAddress(hdNode); 
+    //     let user_updated=    await userDB.findOneAndUpdate({_id:ObjectID(u._id.toString())},{$set:{walletInfo:outObj}})
+    //     updatedUsers.push(user_updated)
+    // }
+       return allUsers
+    } catch (error) {
+        console.log(error)
+
+    }
+}
+// createWallet().then(res=>{
+//     console.log(res,'done')
+// })
+// getUserChat().then(res=>{
+//     console.log(res,"chat")
+// })
 // createChat().then(res=>{
 //     console.log("done",res)
 // })

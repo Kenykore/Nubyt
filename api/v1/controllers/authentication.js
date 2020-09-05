@@ -10,6 +10,7 @@ var cron = require('node-cron')
 const sendEmail= require("../../../services/Notification")
 const Tokenizer = require("../../../utilities/tokeniztion");
 const { randomNumber, formatPhoneNumber } = require("../../../utilities/utils");
+const bchAddressCreator= require('../../../utilities/bch_utils')
 const response = require("../../../utilities/response");
 const request = require('request-promise')
 const config = require("../../../config/index")
@@ -142,9 +143,11 @@ exports.register = async function (req, res, next) {
         }
        delete req.body.password
                const salt = await bcrypt.genSalt(10);
+            //    let walletInfo=await bchAddressCreator.createAdddress()
         let user = await User.create({
             password: await bcrypt.hash(password, salt),
-            ...req.body
+            ...req.body,
+            // walletInfo:walletInfo
         })
         console.log("created user", user)        
         let userRegDate = user.createdAt
@@ -283,9 +286,9 @@ exports.resetPasswordApp = async function (req, res, next) {
         const hashPassword = await bcrypt.hash(new_password, salt);
 
         await User.findByIdAndUpdate(user._id,{password:hashPassword})
-        const deviceDetector = new deviceDetector();
+        const deviceDetect= new deviceDetector();
         const userAgent = req.header("User-Agent")
-        const device = deviceDetector.parse(userAgent);
+        const device = deviceDetect.parse(userAgent);
         console.log(device,"device")
                 let mailOptions = {
                     from: '"Nubyt" <support@nubyt.co>', // sender address

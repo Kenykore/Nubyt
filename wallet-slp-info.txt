@@ -1,0 +1,6 @@
+BIP44 $BCH Wallet
+
+128 bit english BIP32 Mnemonic:
+ancient wrong multiply scorpion tomorrow shop first trick breeze erupt tunnel suspect
+
+BIP44 Account: "m/44'/145'/0'"

@@ -1,11 +1,14 @@
 var User = require('../../../models/users');
 var Post= require("../../../models/post")
+var PostComment= require("../../../models/post_comments")
+
 var UserFollowers = require('../../../models/followers');
 var LivePost=require("../../../models/live_post")
 var ObjectID = require('mongoose').Types.ObjectId;
 //var socket= require('../../../socket/usersocket')
 const { randomNumber, formatPhoneNumber, addLeadingZeros, getUserDetails, getTimeWindow, getNextScheduleDate, getNextSchedulePayment } = require("../../../utilities/utils");
 const response = require("../../../utilities/response");
+const bch_utils = require("../../../utilities/bch_utils");
 const status = require("http-status");
 const Tokenizer = require("../../../utilities/tokeniztion");
 var crypto = require('crypto')
@@ -18,13 +21,7 @@ const request = require('request-promise');
 const { emit } = require('process');
 const socket= require("../../../services/Socket")
 const NotificationController=require("./notification")
-var selfSignedConfig = {
-    service: 'gmail',
-    auth: {
-        user: 'comestiblestech@gmail.com',
-        pass: 'franceskorede1@'
-    }
-}
+
 
 
 exports.updateUserDeviceToken = async function (req, res, next) {
@@ -295,6 +292,31 @@ exports.getIsUserFollowing=async(req,res,next)=>{
         
     } catch (error) {
         console.log(error);
+        next(error)
+    }
+}
+exports.getTokenValue= async(req,res,next)=>{
+    try {
+        let user_id=req.body.user_id
+        let amount=req.body.amount
+        if(!user_id || !amount){
+            return response.sendError({res,message:'User id or amount is required'})
+        }
+        let total_post=await Post.countDocuments({user_id:user_id})
+        let allPost=await Post.find({user_id:user_id})
+        let posts=[]
+        let likes=0
+        for(let a of allPost){
+            posts.push(a._id.toString())
+            likes=p.likes+likes
+        }
+        let total_comment= await PostComment.countDocuments({post_id:{$in:posts}})
+        let user_followers_count=await UserFollowers.countDocuments({user_id:user_id})
+        let user_following_count=await UserFollowers.countDocuments({follower_id:user_id})
+      let token_value= await bch_utils.getTokenValue(amount,total_post,total_comment,likes,user_followers_count,user_following_count)
+      return response.sendSuccess({res,message:'Token conversion done',body:{data:token_value}})
+    } catch (error) {
+        console.log(error)
         next(error)
     }
 }

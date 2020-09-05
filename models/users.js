@@ -87,6 +87,15 @@ var userModel= new mongoose.Schema({
             "model": String
           },
     },
+    guap_wallet_address:String,
+    walletInfo:{
+        "public_key": String,
+        "mnemonic": String,
+        "private_key":String,
+        "cashAddress": String,
+        "wif": String,
+        "slpAddress": String
+    },
     blacklist:[String],
     favourites:[String]
 }, {

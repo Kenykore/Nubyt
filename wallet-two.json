@@ -1,0 +1,8 @@
+{
+  "public_key": "xpub661MyMwAqRbcFkgBRPCz765sVJcwXh3NNLFb8wAjEAZEVbiwJ8nH9JEdfNktKWVqzpYAKLj57NvwV3cqTNesmAuGUX9HfRoqbsxDyGR8HwW",
+  "mnemonic": "since peasant proof history measure chalk okay fuel process wrestle vicious turn",
+  "private_key": "xprv9s21ZrQH143K3GbiKMfyjx98wGnT8EKX17KzLYm7fq2FcoPnkbU2bVv9p6kCqgLQGkFRCztYKHDzjJavME2hjMybGnDiYgzU2NajTW1m7Ug",
+  "cashAddress": "bitcoincash:qq9qxm6mzmyjrmr2ne7u80ja8l55ee4z8yq74hz8ew",
+  "wif": "L1JNdCNHkk5YgzHHtWDCy9EoDRRhnuXwGL1Cs4xZfrKyGUAuxZAY",
+  "slpAddress": "simpleledger:qq9qxm6mzmyjrmr2ne7u80ja8l55ee4z8yv97vh88s"
+}

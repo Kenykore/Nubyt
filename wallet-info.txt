@@ -1,0 +1,16 @@
+BIP44 $BCH Wallet
+
+128 bit english BIP32 Mnemonic:
+believe deal maze topic disorder truck weekend receive boil tired knock donkey
+
+BIP44 Account: "m/44'/145'/0'"
+m/44'/145'/0'/0/0: bchtest:qrs35yl77rharvewc2qm87vqp360hw4n9qpsn77q8u
+m/44'/145'/0'/0/1: bchtest:qp3n3trz3wjnmt6gxx2fwq82lzflqm37qyf3tsurlh
+m/44'/145'/0'/0/2: bchtest:qruee0hv5gpxqykhxfls5geheg07pwnhuvl3fggk73
+m/44'/145'/0'/0/3: bchtest:qrv2hxztv7eeaclusz4xh2p6y2hmpqs9est9gqhw7s
+m/44'/145'/0'/0/4: bchtest:qrdxd35h26azfejyn4al83n7pqns32786skuyd6wk3
+m/44'/145'/0'/0/5: bchtest:qz4qcnnznpqm6calxld0sqpnr7t329txtvwr4ch89a
+m/44'/145'/0'/0/6: bchtest:qpwqvca8e05dzfzl0543vz9fphqpqs7qsq9v5zsgzj
+m/44'/145'/0'/0/7: bchtest:qrhn03zj80rtmcyrvnlr49da0wjuw4jgus3z2tstew
+m/44'/145'/0'/0/8: bchtest:qpa8v0lna03lk3yt9ykecy606sg222q72sp2aqe6xm
+m/44'/145'/0'/0/9: bchtest:qraujsgl69rjqecx58wrn9vmyrwznjfvpuhcvw2f8c

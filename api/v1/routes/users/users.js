@@ -12,6 +12,7 @@ const UserController = require("../../controllers/user");
 router.put("/token", verifyUser,UserController.updateUserDeviceToken);
 router.post("/follow", verifyUser,verifyNonBlockUser,UserController.followerUser);
 router.get("/:user_id",verifyUser,verifyNonBlockUser,UserController.getSingleUser);
+router.get("/token/:user_id",UserController.getTokenValue);
 router.post("/following",verifyUser,UserController.getIsUserFollowing);
 router.post("/unfollow",verifyUser,UserController.UnfollowerUser);
 router.post("/block",verifyUser,UserController.updateUserBlockList);
